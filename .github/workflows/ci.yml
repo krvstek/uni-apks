@@ -33,7 +33,7 @@ jobs:
               BUILD=true
             fi
 
-            echo "build_${APP}=${BUILD}" >> "$GITHUB_OUTPUT"
+            echo "build_${APP//-/_}=${BUILD}" >> "$GITHUB_OUTPUT"
           done
 
       - name: Clear older runs
