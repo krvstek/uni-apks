@@ -46,9 +46,9 @@ def combine_logs(logs_dir: Path | str) -> None:
             line = raw.strip()
             if not line:
                 continue
-            if line.startswith("🟢"):
+            if line.startswith("- 🟢"):
                 green_lines.append(f"{line}  ")
-            elif not microg_line and line.startswith("-") and "MicroG" in line:
+            elif not microg_line and line.startswith("▶️") and "MicroG" in line:
                 microg_line = line
             if _RE_CLI_START.match(line):
                 capturing = True
