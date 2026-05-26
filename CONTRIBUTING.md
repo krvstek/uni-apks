@@ -119,6 +119,7 @@ To sign APKs with a custom keystore, create a `.env` file in the project root:
 ```env
 KEYSTORE_BASE64=<base64-encoded keystore>
 KEYSTORE_PASS=<keystore password>
+KEYSTORE_ALIAS=<keystore alias>
 ```
 
 To encode an existing keystore:
@@ -127,7 +128,7 @@ To encode an existing keystore:
 base64 -w 0 my.keystore
 ```
 
-On **GitHub Actions**, set `KEYSTORE_BASE64` and `KEYSTORE_PASS` as repository secrets under **Settings → Secrets and variables → Actions** instead of a `.env` file, as they are passed to the build automatically.
+On **GitHub Actions**, set `KEYSTORE_BASE64`, `KEYSTORE_PASS` and `KEYSTORE_ALIAS` as repository secrets under **Settings → Secrets and variables → Actions** instead of a `.env` file, as they are passed to the build automatically.
 
 If no keystore is configured, `morphe.keystore` is used as a fallback if it exists in the project root. If neither is present, the CLI signs with its built-in debug keystore. On **GitHub Actions** this means every release will have a different signature, making app updates **impossible**.
 

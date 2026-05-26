@@ -126,8 +126,8 @@ class PatcherCLI:
         tmp_files_dir = output_apk.parent / f"tmp-{output_apk.stem}"
         base_cmd = ["-jar", self.cli_jar, "patch", stock_apk, "--purge", "-o", output_apk, "-p", self.patches_mpp, "-t", tmp_files_dir]
         ks_args: list[str] = []
-        if self.ks_path and (ks_pass := os.getenv("KEYSTORE_PASS", "")):
-            ks_args = [f"--keystore={self.ks_path}", f"--keystore-entry-password={ks_pass}", f"--keystore-password={ks_pass}", "--signer=krvstek", "--keystore-entry-alias=krvstek"]
+        if self.ks_path and (ks_pass := os.getenv("KEYSTORE_PASS", "")) and (ks_alias := os.getenv("KEYSTORE_ALIAS", "")):
+            ks_args = [f"--keystore={self.ks_path}", f"--keystore-entry-password={ks_pass}", f"--keystore-password={ks_pass}", f"--signer={ks_alias}", f"--keystore-entry-alias={ks_alias}"]
         elif Path("morphe.keystore").exists():
             ks_args = ["--keystore=morphe.keystore"]
 
