@@ -51,7 +51,7 @@ def check_builds_needed() -> None:
             our_releases_raw = net.gh_get(f"https://api.github.com/repos/{repo}/releases?per_page=100")
             for rel in json.loads(our_releases_raw):
                 tag = rel.get("tag_name", "")
-                brand = tag.rsplit("-", 1)[-1] if "-" in tag else ""
+                brand = tag.split("-", 1)[1] if "-" in tag else ""
                 if brand in seen and brand not in our_releases_by_brand:
                     our_releases_by_brand[brand] = rel.get("published_at", "") or ""
         except Exception as exc:
