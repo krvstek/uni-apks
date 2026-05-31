@@ -9,7 +9,7 @@
 Here you will find a step-by-step technical guide on how to set up your environment, run the patching script, customize the build configuration, and contribute to the project's development.
 </div>
 
-## 📦 Setting up environment
+## 💻 Build Locally
 
 1. 📋 **Requirements**:
 
@@ -55,8 +55,8 @@ apkmirror-dlurl = "https://www.apkmirror.com/apk/inc/app"
 |:------:|:--------------:|:----------:|:--------:|
 | `parallel-jobs` | Number of concurrent builds | `CPU count` | Global |
 | `brand` | Used in output filenames | `Morphe` | Global / Per-app |
-| `patches-version` | Patches version to fetch | `latest` | Global / Per-app |
-| `cli-version` | CLI version to fetch | `latest` | Global / Per-app |
+| `patches-version` | Patches version to fetch (`latest`, `dev`, or a specific version string) | `latest` | Global / Per-app |
+| `cli-version` | CLI version to fetch (`latest`, `dev`, or a specific version string) | `latest` | Global / Per-app |
 | `patches-source` | GitHub repo for patches (`owner/repo`) | `MorpheApp/morphe-patches` | Global / Per-app |
 | `cli-source` | GitHub repo for CLI (`owner/repo`) | `MorpheApp/morphe-cli` | Global / Per-app |
 | `strict-sigcheck` | Fail the build if an app is missing from `sig.txt` (see note below) | `true` | **Global only** |
