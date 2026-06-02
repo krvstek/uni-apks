@@ -8,7 +8,7 @@ from src.core.logger import pr, wpr
 from src.core.network import NetworkManager
 
 APKSIGNER: Path = Path("bin/apksigner.jar")
-
+_KNOWN_PREFIXES = ("gitlab:", "github:")
 
 class PrebuiltsError(Exception):
     pass
@@ -22,6 +22,12 @@ def _ver_key(ver: str) -> tuple[int, ...]:
     base = ver.split("-")[0]
     return tuple(int(x) for x in re.findall(r"\d+", base)) or (0,)
 
+def _strip_src_prefix(src: str) -> str:
+    for prefix in _KNOWN_PREFIXES:
+        if src.startswith(prefix):
+            return src[len(prefix):]
+    raise PrebuiltsError(f"Unknown source scheme in {src!r}, expected one of {_KNOWN_PREFIXES}")
+
 def get_highest_ver(versions: list[str]) -> str:
     clean = [v.strip() for v in versions if v.strip()]
     if not clean:
@@ -30,8 +36,8 @@ def get_highest_ver(versions: list[str]) -> str:
     return max(clean, key=_ver_key)
 
 def fetch_prebuilts(cli_src: str, cli_ver: str, patches_src: str, patches_ver: str, net: NetworkManager) -> Prebuilts:
-    patches_org = patches_src.removeprefix("gitlab:").split("/")[0]
-    cli_org = cli_src.removeprefix("gitlab:").split("/")[0]
+    patches_org = _strip_src_prefix(patches_src).split("/")[0]
+    cli_org = _strip_src_prefix(cli_src).split("/")[0]
     cl_dir = TEMP_DIR / patches_org.lower()
     cli_dir = TEMP_DIR / cli_org.lower()
     cl_dir.mkdir(parents=True, exist_ok=True)
@@ -62,7 +68,7 @@ def _get_target_asset(release: dict, ext: str, src: str, ver: str, gitlab: bool)
 
 def _fetch_single_asset(src: str, tag: str, ver: str, fprefix: str, ext: str, cl_dir: Path, net: NetworkManager) -> tuple[Path, str]:
     gitlab = src.startswith("gitlab:")
-    clean_src = src.removeprefix("gitlab:")
+    clean_src = _strip_src_prefix(src)
     if gitlab:
         project = clean_src.replace("/", "%2F")
         base_url = f"https://gitlab.com/api/v4/projects/{project}/releases"

@@ -60,8 +60,8 @@ def parse_config(data: dict[str, object]) -> Config:
         brand=str(data.get("brand", "Morphe")),
         patches_version=str(data.get("patches-version", "latest")),
         cli_version=str(data.get("cli-version", "latest")),
-        patches_source=str(data.get("patches-source", "MorpheApp/morphe-patches")),
-        cli_source=str(data.get("cli-source", "MorpheApp/morphe-cli")),
+        patches_source=str(data.get("patches-source", "github:MorpheApp/morphe-patches")),
+        cli_source=str(data.get("cli-source", "github:MorpheApp/morphe-cli")),
         strict_sigcheck=_parse_bool(data.get("strict-sigcheck", True), "strict-sigcheck"),
     )
 
