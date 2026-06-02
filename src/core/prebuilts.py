@@ -10,6 +10,7 @@ from src.core.network import NetworkManager
 APKSIGNER: Path = Path("bin/apksigner.jar")
 _KNOWN_PREFIXES = ("gitlab:", "github:")
 
+
 class PrebuiltsError(Exception):
     pass
 
@@ -53,8 +54,7 @@ def fetch_prebuilts(cli_src: str, cli_ver: str, patches_src: str, patches_ver: s
 
     return Prebuilts(cli_jar=cli_jar, patches_mpp=patches_mpp)
 
-def _get_target_asset(release: dict, ext: str, src: str, ver: str, gitlab: bool) -> dict:
-    assets = release.get("assets", {}).get("links", []) if gitlab else release.get("assets", [])
+def _get_target_asset(assets: list, ext: str, src: str, ver: str) -> dict:
     matches = [a for a in assets if a.get("name", "").endswith(f".{ext}")]
     non_dev = [a for a in matches if "-dev" not in a.get("name", "")]
     target = non_dev if (len(matches) > 1 and non_dev) else matches
@@ -99,7 +99,8 @@ def _fetch_single_asset(src: str, tag: str, ver: str, fprefix: str, ext: str, cl
         release_url = f"{base_url}/{ver}" if gitlab else f"{base_url}/tags/{ver}"
         release = json.loads(net.get(release_url) if gitlab else net.gh_get(release_url))
 
-    asset = _get_target_asset(release, ext, src, ver, gitlab)
+    raw_assets = release.get("assets", {}).get("links", []) if gitlab else release.get("assets", [])
+    asset = _get_target_asset(raw_assets, ext, src, ver)
     file = cl_dir / asset["name"]
     for old_file in cl_dir.glob(f"*{fprefix}-*.{ext}"):
         if old_file.is_file() and not old_file.name.startswith("tmp."):
