@@ -46,7 +46,7 @@ class APKMirrorScraper(BaseScraper):
             search_html = self.net.get(f"{url.rstrip('/')}/?s={version}")
             soup = _parse_html(search_html)
             for a in soup.select("a.fontBlack[href*='-release/']"):
-                if version in a.get_text():
+                if version in a.get_text() and f"/{self._category}/" in a.get("href", ""):
                     release_url = urljoin("https://www.apkmirror.com", a["href"])
                     break
 
