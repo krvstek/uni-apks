@@ -121,6 +121,7 @@ jobs:
           LABEL: ${{ matrix.id }}${{ matrix.arch && format('-{0}', matrix.arch) || '' }}
         run: |
           [[ -f build.md ]] || exit 0
+          [[ -s build.md ]] || exit 0
           cp build.md "build-${LABEL}.md"
           gh release upload "$TAG" "build-${LABEL}.md" --clobber --repo "$GITHUB_REPOSITORY"
 
