@@ -114,6 +114,9 @@ def main() -> None:
         case ["get-matrix"]:
             _require_ci("get-matrix")
             check_builds_needed()
+        case ["get-matrix-force"]:
+            _require_ci("get-matrix")
+            check_builds_needed(force_all=True)
         case ["get-matrix", source]:
             _require_ci("get-matrix")
             get_matrix(source)
