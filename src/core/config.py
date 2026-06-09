@@ -87,7 +87,7 @@ def parse_app_entries(data: dict[str, object], main: Config) -> list[AppEntry]:
         raw_keywords = t.get("changelog-keywords")
         if raw_keywords is not None and not isinstance(raw_keywords, list):
             raise ValueError(f"'changelog-keywords' must be a list for '{table_name}'")
-        keywords = [str(k).lower() for k in raw_keywords if str(k).strip()] if raw_keywords else []
+        keywords = [s.lower() for k in raw_keywords if (s := str(k)).strip()] if raw_keywords else []
 
         entries.append(AppEntry(
             table=table_name,

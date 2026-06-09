@@ -46,8 +46,9 @@ def get_matrix(source: str) -> None:
     for entry in parse_app_entries(data, main_cfg):
         if entry.enabled and entry.brand.lower() == source_lower:
             patches_source = entry.patches_source
-            if not has_changelog_keywords and entry.changelog_keywords:
+            if entry.changelog_keywords:
                 has_changelog_keywords = True
+                break
 
     changelog_text = ""
     if has_changelog_keywords and patches_source:
