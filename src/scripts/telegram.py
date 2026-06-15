@@ -53,7 +53,7 @@ def notify(brand: str, final_md_path: str = "final.md") -> None:
         epr("No build results found in final.md, skipping notification")
         return
 
-    msg = _build_message(brand, green_lines, microg_line, changelog_line)[:4096]
+    msg = _build_message(brand, green_lines, microg_line, changelog_line)
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {"chat_id": chat, "text": msg, "parse_mode": "Markdown", "link_preview_options": {"is_disabled": True}}
     pr(f"Sending Telegram notification for '{brand}' to '{chat}'")
