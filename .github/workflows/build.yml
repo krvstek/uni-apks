@@ -15,6 +15,9 @@ on:
       patch_source:
         default: 'morphe'
         type: string
+      filter_changelog:
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -59,6 +62,7 @@ jobs:
       - name: Set matrix based on patch source
         id: set-matrix
         env:
+          FILTER_CHANGELOG: ${{ inputs.filter_changelog }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: echo "matrix=$(uv run python -m src.scripts.matrix get-matrix '${{ inputs.patch_source }}')" >> "$GITHUB_OUTPUT"
 

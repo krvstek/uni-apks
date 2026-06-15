@@ -44,6 +44,7 @@ def get_matrix(source: str) -> None:
     data = load_toml(CONFIG_PATH)
     main_cfg = parse_config(data)
     source_lower = source.lower()
+    filter_changelog = os.getenv("FILTER_CHANGELOG", "false").lower() == "true"
     patches_source = ""
     has_changelog_keywords = False
     for entry in parse_app_entries(data, main_cfg):
@@ -54,7 +55,7 @@ def get_matrix(source: str) -> None:
                 break
 
     changelog_text = ""
-    if has_changelog_keywords and patches_source:
+    if filter_changelog and has_changelog_keywords and patches_source:
         with NetworkManager() as net:
             repo = os.getenv("GITHUB_REPOSITORY")
             if repo:
@@ -71,7 +72,7 @@ def get_matrix(source: str) -> None:
         if not entry.enabled or entry.brand.lower() != source_lower:
             continue
 
-        if entry.changelog_keywords and changelog_text and not any(kw in changelog_text.lower() for kw in entry.changelog_keywords):
+        if filter_changelog and entry.changelog_keywords and changelog_text and not any(kw in changelog_text.lower() for kw in entry.changelog_keywords):
             continue
 
         if entry.arch == "both":

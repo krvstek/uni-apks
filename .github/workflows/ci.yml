@@ -56,6 +56,7 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       patch_source: 'morphe'
+      filter_changelog: ${{ inputs.force_build != true }}
     secrets: inherit
 
   build-piko:
@@ -65,4 +66,5 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       patch_source: 'piko'
+      filter_changelog: ${{ inputs.force_build != true }}
     secrets: inherit

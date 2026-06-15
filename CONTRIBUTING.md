@@ -117,6 +117,7 @@ build-<brand>:
   uses: ./.github/workflows/build.yml
   with:
     patch_source: '<brand>'
+    filter_changelog: ${{ inputs.force_build != true }}
   secrets: inherit
 ```
 
