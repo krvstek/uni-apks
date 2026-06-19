@@ -43,6 +43,10 @@ jobs:
             echo "build_matrix=$(uv run python -m src.scripts.matrix get-matrix)" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Notify skipped build
+        if: steps.get-matrix.outputs.build_matrix == '[]'
+        run: echo "::notice title=Build Skipped::No new releases detected."
+
       - name: Clear older runs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
