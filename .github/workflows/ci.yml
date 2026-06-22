@@ -28,6 +28,7 @@ jobs:
         with:
           python-version: "3.13"
           enable-cache: true
+          quiet: true
 
       - name: Install dependencies
         run: uv sync --frozen
