@@ -64,7 +64,6 @@ class NetworkManager:
                     continue
 
                 return resp.text
-
             except req_exc.RequestException as exc:
                 last_exc = exc
                 epr(f"Request error for {url}, attempt {attempt}/{_MAX_ATTEMPTS}: {exc}")
@@ -99,7 +98,6 @@ class NetworkManager:
                             fh.write(chunk)
                     tmp.replace(dest)
                     return
-
                 except req_exc.RequestException as exc:
                     tmp.unlink(missing_ok=True)
                     last_exc = exc
