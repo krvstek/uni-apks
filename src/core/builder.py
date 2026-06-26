@@ -199,7 +199,7 @@ def _submit_entries(entries: list[AppEntry], pool: ThreadPoolExecutor, net: Netw
         patcher = PatcherCLI(cli_cache[cli_key], app_mpp_map, APKSIGNER, ks_path=ks_path)
         arches = ("arm64-v8a", "armeabi-v7a") if entry.arch == "both" else (entry.arch,)
         for arch in arches:
-            label = entry.table if entry.arch == "all" else f"{entry.table} ({arch})"
+            label = entry.app_name if entry.arch == "all" else f"{entry.app_name} ({arch})"
             futures.append(pool.submit(_build_single, entry, arch, label, net, patcher, strict_sigcheck))
     return futures
 
