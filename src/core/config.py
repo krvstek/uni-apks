@@ -95,7 +95,7 @@ def parse_app_entries(data: dict[str, object], main: Config) -> list[AppEntry]:
 
         entries.append(AppEntry(
             table=table_name,
-            app_name=str(t.get("app-name", table_name)),
+            app_name=str(t.get("app-name", table_name.replace("-", " "))),
             brand=str(t.get("brand", main.brand)),
             arch=arch,
             dpi=str(t.get("dpi", "")),
