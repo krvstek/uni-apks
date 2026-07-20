@@ -57,7 +57,10 @@ class NetworkManager:
     def __init__(self) -> None:
         self.session = requests.Session(impersonate="chrome146")
         token = os.getenv("GITHUB_TOKEN")
-        self._gh_headers: dict[str, str] = {"Authorization": f"token {token}"} if token else {}
+        if token and "dummy" not in token.lower() and "placeholder" not in token.lower():
+            self._gh_headers: dict[str, str] = {"Authorization": f"token {token}"}
+        else:
+            self._gh_headers = {}
         self._domain_locks: dict[str, threading.Lock] = {}
         self._domain_mu = threading.Lock()
         self._dest_locks: dict[Path, threading.Lock] = {}

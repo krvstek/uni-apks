@@ -64,7 +64,7 @@ def _parse_bool(d: dict[str, object], key: str, default: bool) -> bool:
 
 def parse_config(data: dict[str, object]) -> Config:
     return Config(
-        parallel_jobs=int(data.get("parallel-jobs", os.process_cpu_count() or 1)),
+        parallel_jobs=int(data.get("parallel-jobs", os.cpu_count() or 1)),
         brand=str(data.get("brand", "Morphe")),
         cli_version=str(data.get("cli-version", "latest")),
         cli_source=str(data.get("cli-source", "github:MorpheApp/morphe-desktop")),

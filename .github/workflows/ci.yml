@@ -21,10 +21,13 @@ jobs:
       build_matrix: ${{ steps.get-matrix.outputs.build_matrix }}
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
 
       - name: Install uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.13"
           enable-cache: true
@@ -32,6 +35,20 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --frozen
+
+      - name: Initialize submodules
+        run: |
+          git submodule update --init --recursive --depth 1
+
+      - name: Run Patch Synchronization
+        run: uv run python src/scripts/sync_patches.py
+
+      - name: Commit and push patch updates
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add patches/ testing/patches/ README.md
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: synchronize patches and update README [skip ci]" && git push origin HEAD:Testing)
 
       - name: Get build matrix
         id: get-matrix

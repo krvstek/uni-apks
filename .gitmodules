@@ -1,0 +1,18 @@
+[submodule "patches/morphe-patches"]
+	path = patches/morphe-patches
+	url = https://github.com/MorpheApp/morphe-patches.git
+[submodule "patches/piko"]
+	path = patches/piko
+	url = https://github.com/crimera/piko.git
+[submodule "patches/x-shim"]
+	path = patches/x-shim
+	url = https://gitlab.com/inotia00/x-shim.git
+[submodule "patches/rushiranpise-morphe-patches"]
+	path = patches/rushiranpise-morphe-patches
+	url = https://github.com/rushiranpise/morphe-patches.git
+[submodule "patches/paresh-patches"]
+	path = patches/paresh-patches
+	url = https://gitlab.com/Paresh-Maheshwari/paresh-patches.git
+[submodule "patches/hoo-dles-morphe-patches"]
+	path = patches/hoo-dles-morphe-patches
+	url = https://github.com/hoo-dles/morphe-patches.git

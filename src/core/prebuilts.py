@@ -54,7 +54,19 @@ def fetch_cli(cli_src: str, cli_ver: str, net: NetworkManager) -> Path:
     return jar
 
 def fetch_mpp(src: str, ver: str, net: NetworkManager) -> Path:
-    org = _strip_src_prefix(src).split("/")[0]
+    clean_src = _strip_src_prefix(src)
+    org = clean_src.split("/")[0]
+    repo_name = clean_src.split("/")[1]
+    
+    # Prioritize localized patches stored in testing/patches/
+    local_dir = Path("testing/patches") / org.lower()
+    if local_dir.exists():
+        for ext in ("mpp", "jar"):
+            for f in local_dir.glob(f"*{repo_name}*.{ext}"):
+                if f.is_file():
+                    return f
+
+    # Fallback to temp downloading
     cl_dir = TEMP_DIR / org.lower()
     cl_dir.mkdir(parents=True, exist_ok=True)
     mpp, changelog = _fetch_single_asset(src, "Patches", ver, "mpp", cl_dir, net)

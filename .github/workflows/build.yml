@@ -1,5 +1,13 @@
 name: Build APKs
 on:
+  push:
+    branches:
+      - Testing
+    paths:
+      - 'src/**'
+      - 'main.py'
+      - 'config.toml'
+      - 'testing/patches/**'
   workflow_dispatch:
     inputs:
       patch_source:
@@ -21,7 +29,7 @@ on:
         type: boolean
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   prepare:
@@ -34,13 +42,13 @@ jobs:
       prerelease: ${{ steps.set-matrix.outputs.prerelease }}
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
           submodules: true
 
       - name: Install uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.13"
           enable-cache: true
@@ -54,7 +62,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VER="$(date +%y.%m.%d)-${{ inputs.patch_source }}"
+          PATCH_SRC="${{ inputs.patch_source || 'all' }}"
+          VER="$(date +%y.%m.%d)-${PATCH_SRC}"
           echo "version=${VER}" >> "$GITHUB_OUTPUT"
           if gh release view "$VER" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release edit "$VER" --draft --repo "$GITHUB_REPOSITORY"
@@ -65,10 +74,11 @@ jobs:
       - name: Set matrix based on patch source
         id: set-matrix
         env:
-          FILTER_CHANGELOG: ${{ inputs.filter_changelog }}
+          FILTER_CHANGELOG: ${{ inputs.filter_changelog || 'false' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "${{ inputs.patch_source }}" = "all" ]; then
+          PATCH_SRC="${{ inputs.patch_source || 'all' }}"
+          if [ "$PATCH_SRC" = "all" ]; then
             # Fetch both matrices independently
             RES_M="$(uv run python -m src.scripts.matrix get-matrix 'morphe')"
             RES_P="$(uv run python -m src.scripts.matrix get-matrix 'piko')"
@@ -79,7 +89,7 @@ jobs:
             echo "matrix=$(echo "$COMBINED" | jq -c '.')" >> "$GITHUB_OUTPUT"
             echo "prerelease=$(echo "$RES_M" | jq -r '.prerelease')" >> "$GITHUB_OUTPUT"
           else
-            RESULT="$(uv run python -m src.scripts.matrix get-matrix '${{ inputs.patch_source }}')"
+            RESULT="$(uv run python -m src.scripts.matrix get-matrix "$PATCH_SRC")"
             echo "matrix=$(echo "$RESULT" | jq -c '{include}')" >> "$GITHUB_OUTPUT"
             echo "prerelease=$(echo "$RESULT" | jq -r '.prerelease')" >> "$GITHUB_OUTPUT"
           fi
@@ -95,19 +105,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: true
 
       - name: Install java
-        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520  # v5.4.0
+        uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "21"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.13"
           enable-cache: true
@@ -158,13 +168,13 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: true
 
       - name: Install uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.13"
           enable-cache: true
@@ -199,6 +209,7 @@ jobs:
           TAG: ${{ needs.prepare.outputs.version }}
           PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
         run: |
+          PATCH_SRC="${{ inputs.patch_source || 'all' }}"
           uv run python -m src.scripts.logs combine-logs logs | sed "s/{TAG}/$TAG/g" > final.md
           if [ "$PRERELEASE" = "true" ]; then
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --title "$TAG" --notes-file final.md
@@ -211,8 +222,10 @@ jobs:
         env:
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_CHAT: ${{ secrets.TG_CHAT }}
-        run: uv run python -m src.scripts.telegram notify '${{ inputs.patch_source }}'
-
+        run: |
+          PATCH_SRC="${{ inputs.patch_source || 'all' }}"
+          uv run python -m src.scripts.telegram notify "${PATCH_SRC}"
+          
       - name: Delete empty draft if no APKs
         if: steps.check.outputs.has_apks != 'true'
         env:

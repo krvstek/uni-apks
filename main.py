@@ -18,12 +18,12 @@ import shutil
 import signal
 import subprocess
 import sys
-from copy import replace
+from dataclasses import replace
 from pathlib import Path
 
 from src.core.builder import run_build
 from src.core.config import BUILD_DIR, CONFIG_PATH, TEMP_DIR, VALID_ARCHES, AppEntry, load_toml, parse_app_entries, parse_config
-from src.core.logger import abort, epr, mark_interrupted, pr
+from src.core.logger import abort, epr, mark_interrupted, pr, wpr
 from src.core.network import NetworkManager
 
 _shutting_down = False
@@ -50,8 +50,8 @@ def _require_java(min_version: int = 21) -> None:
     result = subprocess.run(["java", "-version"], capture_output=True, text=True)
     match = re.search(r'version "(\d+)', result.stderr)
     if not match:
-        abort("Could not determine Java version")
-    assert match
+        wpr("Could not determine Java version. Proceeding anyway.")
+        return
 
     version = int(match.group(1))
     if version < min_version:
