@@ -20,7 +20,7 @@ from bs4 import BeautifulSoup
 from src.core.network import NetworkManager
 
 
-def _parse_html(html: str) -> BeautifulSoup:
+def parse_html(html: str) -> BeautifulSoup:
     return BeautifulSoup(html, "html.parser")
 
 class ScraperError(Exception):

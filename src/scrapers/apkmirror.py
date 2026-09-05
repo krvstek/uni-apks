@@ -19,7 +19,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from src.core.network import NetworkManager, ResourceNotFoundError
-from src.scrapers.base import AppMetadata, BaseScraper, DownloadResult, ScraperError, _parse_html
+from src.scrapers.base import AppMetadata, BaseScraper, DownloadResult, ScraperError, parse_html
 
 _DEFAULT_ARCH: frozenset[str] = frozenset({"universal", "noarch", "arm64-v8a + armeabi-v7a", "arm64-v8a + armeabi"})
 
@@ -39,14 +39,14 @@ class APKMirrorScraper(BaseScraper):
         if not m:
             raise APKMirrorError("Package name not found")
 
-        soup = _parse_html(self.net.get(f"https://www.apkmirror.com/uploads/?appcategory={self._category}"))
+        soup = parse_html(self.net.get(f"https://www.apkmirror.com/uploads/?appcategory={self._category}"))
         versions: list[str] = []
         for a in soup.select("#primary a.fontBlack[href*='-release/']"):
             text = a.get_text(strip=True)
             if "beta" in text.lower() or "alpha" in text.lower() or "secondary" in text.lower():
                 continue
             v = text.split()[-1]
-            self._release_urls[v] = urljoin("https://www.apkmirror.com", a["href"])
+            self._release_urls[v] = urljoin("https://www.apkmirror.com", str(a["href"]))
             versions.append(v)
         return AppMetadata(pkg_name=m.group(1), versions=versions)
 
@@ -61,13 +61,13 @@ class APKMirrorScraper(BaseScraper):
 
         if release_url is None:
             search_html = self.net.get(f"{url.rstrip('/')}/?s={clean_ver}")
-            soup = _parse_html(search_html)
+            soup = parse_html(search_html)
             for a in soup.select("a.fontBlack[href*='-release/']"):
                 text = a.get_text()
-                if (version in text or clean_ver in text) and f"/{self._category}/" in a.get("href", ""):
+                if (version in text or clean_ver in text) and f"/{self._category}/" in str(a.get("href") or ""):
                     if "secondary" in text.lower() and "secondary" not in version.lower():
                         continue
-                    release_url = urljoin("https://www.apkmirror.com", a["href"])
+                    release_url = urljoin("https://www.apkmirror.com", str(a["href"]))
                     break
 
         if release_url is None:
@@ -79,7 +79,7 @@ class APKMirrorScraper(BaseScraper):
             raise APKMirrorError("Version not found") from None
 
         is_bundle = False
-        soup_release = _parse_html(release_html)
+        soup_release = parse_html(release_html)
         if soup_release.select_one("div.table-row.headerFont:last-child"):
             dl_url = self._pick_variant(soup_release, dpi, arch, version_code=version_code, version=version)
             if dl_url is None:
@@ -87,12 +87,16 @@ class APKMirrorScraper(BaseScraper):
             release_html = self.net.get(dl_url[0])
             is_bundle = dl_url[1] == "BUNDLE"
 
-        soup_dl = _parse_html(release_html)
+        soup_dl = parse_html(release_html)
         btn = soup_dl.select_one("a.btn")
-        btn_url = urljoin("https://www.apkmirror.com", btn["href"])
-        soup_final = _parse_html(self.net.get(btn_url))
+        if btn is None:
+            raise APKMirrorError("Download button not found")
+        btn_url = urljoin("https://www.apkmirror.com", str(btn["href"]))
+        soup_final = parse_html(self.net.get(btn_url))
         dl_link = soup_final.select_one("span > a[rel=nofollow]")
-        final_url = urljoin("https://www.apkmirror.com", dl_link["href"])
+        if dl_link is None:
+            raise APKMirrorError("Download link not found")
+        final_url = urljoin("https://www.apkmirror.com", str(dl_link["href"]))
         out_path = dest.with_suffix(".apkm") if is_bundle else dest
         self.net.download(final_url, out_path)
         return DownloadResult(path=out_path, is_bundle=is_bundle)
@@ -124,7 +128,7 @@ class APKMirrorScraper(BaseScraper):
 
                 extracted_vcode = None
                 for span in cells[0].select("span.colorLightBlack"):
-                    if "wrapText" not in span.get("class", []) and not span.select_one(".dateyear_utc"):
+                    if "wrapText" not in (span.get("class") or []) and not span.select_one(".dateyear_utc"):
                         txt = span.get_text(strip=True)
                         if txt.isdigit():
                             extracted_vcode = txt

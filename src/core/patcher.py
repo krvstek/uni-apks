@@ -18,6 +18,7 @@ import re
 import subprocess
 from pathlib import Path
 
+from src.core.config import PatchSpec
 from src.core.logger import pr, wpr
 from src.core.prebuilts import get_highest_ver
 
@@ -50,7 +51,7 @@ def _parse_versions_output(output: str) -> list[str]:
         return []
 
     block = output.split(marker)[1].split("\n\n")[0]
-    versions = []
+    versions: list[str] = []
     for line in block.splitlines():
         parts = line.split()
         if parts:
@@ -92,13 +93,13 @@ class PatcherCLI:
 
     def list_versions(self, pkg_name: str, experimental: bool = False) -> str:
         extra = ["-x"] if experimental else []
-        parts = []
+        parts: list[str] = []
         for mpp in self.mpp_map.values():
             with contextlib.suppress(PatcherError):
                 parts.append(_run_java("-jar", self.cli_jar, "list-versions", "--patches", mpp, "-f", pkg_name, *extra, timeout=60))
         return "\n".join(parts)
 
-    def get_last_supported_version(self, list_patches_output: str, pkg_name: str, patches: dict[str, dict], arch: str = "arm64-v8a", experimental: bool = False) -> tuple[str, str | None] | None:
+    def get_last_supported_version(self, list_patches_output: str, pkg_name: str, patches: dict[str, PatchSpec], arch: str = "arm64-v8a", experimental: bool = False) -> tuple[str, str | None] | None:
         all_included = [p for spec in patches.values() for p in spec["include"]]
         all_vers: list[str] = []
         for p in all_included:
@@ -131,7 +132,7 @@ class PatcherCLI:
                 psu_patch = patch_name
         return microg_patch, psu_patch
 
-    def build_patch_args(self, patches: dict[str, dict], extra_args: list[str], arch: str, auto_patches: tuple[str, str], exclusive: bool = False, force: bool = False) -> list[str]:
+    def build_patch_args(self, patches: dict[str, PatchSpec], extra_args: list[str], arch: str, auto_patches: tuple[str, str], exclusive: bool = False, force: bool = False) -> list[str]:
         active_auto = {p for p in auto_patches if p}
         p_args: list[str] = ["-f"] if force else []
         for src, spec in patches.items():

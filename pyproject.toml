@@ -17,5 +17,11 @@ dependencies = [
 target-version = "py313"
 
 [tool.ruff.lint]
-select = ["E", "F", "B", "I", "UP", "RUF", "SIM", "C4", "PTH", "G", "PIE"]
+select = ["E", "F", "B", "I", "A", "ISC", "UP", "RUF", "SIM", "C4", "PTH", "G", "PIE", "RSE"]
 ignore = ["E501"]
+
+[tool.pyright]
+pythonVersion = "3.13"
+pythonPlatform = "Linux"
+include = ["src", "main.py"]
+typeCheckingMode = "strict" 

@@ -14,6 +14,7 @@
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 from src.core.network import NetworkManager, ResourceNotFoundError
 from src.scrapers.base import AppMetadata, BaseScraper, DownloadResult, ScraperError
@@ -28,7 +29,7 @@ class GitHubReleasesError(ScraperError):
 class GitHubScraper(BaseScraper):
     def __init__(self, net: NetworkManager) -> None:
         super().__init__(net)
-        self._assets: list[dict] = []
+        self._assets: list[dict[str, Any]] = []
 
     def fetch_metadata(self, url: str) -> AppMetadata:
         m = _GH_URL.search(url)
@@ -38,7 +39,7 @@ class GitHubScraper(BaseScraper):
         owner, repo, tag = m.groups()
         api_url = f"https://api.github.com/repos/{owner}/{repo}/releases/tags/{tag}"
         try:
-            release = json.loads(self.net.get(api_url, headers=self.net._gh_headers))
+            release = json.loads(self.net.get(api_url, headers=self.net.gh_headers))
         except ResourceNotFoundError:
             raise GitHubReleasesError(f"Release tag '{tag}' not found in '{owner}/{repo}'") from None
 
@@ -83,5 +84,5 @@ class GitHubScraper(BaseScraper):
 
         is_bundle = asset["name"].endswith(".apkm")
         out_path = dest.with_suffix(".apkm") if is_bundle else dest
-        self.net.download(asset["browser_download_url"], out_path, headers=self.net._gh_headers | {"Accept": "application/octet-stream"})
+        self.net.download(asset["browser_download_url"], out_path, headers=self.net.gh_headers | {"Accept": "application/octet-stream"})
         return DownloadResult(path=out_path, is_bundle=is_bundle)

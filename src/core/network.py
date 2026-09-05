@@ -16,9 +16,11 @@ import random
 import threading
 import time
 from pathlib import Path
+from typing import Any, cast
 from urllib.parse import urlparse
 
 from curl_cffi import requests
+from curl_cffi.requests import Response
 from curl_cffi.requests import exceptions as req_exc
 
 from src.core.logger import epr
@@ -34,7 +36,7 @@ class NetworkError(Exception):
 class ResourceNotFoundError(NetworkError):
     """Raised when a remote resource returns HTTP 404."""
 
-def _get_lock(locks: dict, mu: threading.Lock, key) -> threading.Lock:
+def _get_lock[KT](locks: dict[KT, threading.Lock], mu: threading.Lock, key: KT) -> threading.Lock:
     with mu:
         return locks.setdefault(key, threading.Lock())
 
@@ -42,7 +44,7 @@ def _retry_sleep(attempt: int) -> None:
     if attempt <= len(_RETRY_DELAYS):
         time.sleep(_RETRY_DELAYS[attempt - 1] + random.uniform(0, 1))
 
-def _is_challenge(resp) -> bool:
+def _is_challenge(resp: Response) -> bool:
     if resp.status_code == 403:
         return True
 
@@ -51,7 +53,7 @@ def _is_challenge(resp) -> bool:
         return "just a moment" in body or "turnstile" in body or "cf-mitigated" in resp.headers
     return False
 
-def _handle_status(resp, url: str, attempt: int) -> bool:
+def _handle_status(resp: Response, url: str, attempt: int) -> bool:
     if resp.status_code == 404:
         raise ResourceNotFoundError(f"Not found (404): {url}")
 
@@ -77,6 +79,10 @@ class NetworkManager:
         self.session.close()
         self.session = requests.Session(impersonate="chrome150")
 
+    @property
+    def gh_headers(self) -> dict[str, str]:
+        return self._gh_headers
+
     def _solve_challenge(self, url: str) -> bool:
         self._reset_session()
         try:
@@ -84,15 +90,16 @@ class NetworkManager:
             if resp.status_code != 200:
                 return False
 
-            data = resp.json()
+            resp_any: Any = resp
+            data = cast(dict[str, Any], resp_any.json())
             cookies = data.get("cookies", {})
             user_agent = data.get("user_agent")
             if isinstance(cookies, dict):
-                for k, v in cookies.items():
+                for k, v in cast(dict[str, str], cookies).items():
                     self.session.cookies.set(k, v)
             elif isinstance(cookies, list):
-                for c in cookies:
-                    if isinstance(c, dict) and "name" in c and "value" in c:
+                for c in cast(list[dict[str, str]], cookies):
+                    if "name" in c and "value" in c:
                         self.session.cookies.set(c["name"], c["value"])
 
             if user_agent:
@@ -158,7 +165,8 @@ class NetworkManager:
                         continue
 
                     with tmp.open("wb") as fh:
-                        for chunk in resp.iter_content(chunk_size=1048576):
+                        resp_any: Any = resp
+                        for chunk in cast(list[bytes], resp_any.iter_content(chunk_size=1048576)):
                             fh.write(chunk)
                     tmp.replace(dest)
                     return

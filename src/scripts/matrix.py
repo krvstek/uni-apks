@@ -12,12 +12,13 @@
 # See the AUTHORS file in the root directory for details.
 # ---------------------------------------------------------
 
-import json
+import json  # noqa: I001
 import os
 import sys
 from datetime import datetime
+from typing import Any
 
-from src.core.config import CONFIG_PATH, load_toml, parse_app_entries, parse_config
+from src.core.config import CONFIG_PATH, AppEntry, load_toml, parse_app_entries, parse_config
 from src.core.logger import IS_GITHUB, abort, epr
 from src.core.network import NetworkManager, ResourceNotFoundError
 
@@ -28,37 +29,39 @@ def _require_ci(script: str) -> None:
 
 def _fetch_latest_release(source: str, net: NetworkManager, version: str = "latest") -> tuple[str, str]:
     scheme, clean_src = source.split(":", 1)
+    upstream_rel: dict[str, Any]
     if scheme == "gitlab":
         project = clean_src.replace("/", "%2F")
         upstream_rel = json.loads(net.get(f"https://gitlab.com/api/v4/projects/{project}/releases/permalink/latest"))
-        changelog_text = upstream_rel.get("description", "") or ""
-        upstream_date = upstream_rel.get("released_at", "") or ""
+        changelog_text = str(upstream_rel.get("description") or "")
+        upstream_date = str(upstream_rel.get("released_at") or "")
     elif version == "dev":
-        releases = json.loads(net.get(f"https://api.github.com/repos/{clean_src}/releases?per_page=1", headers=net._gh_headers))
+        releases: list[dict[str, Any]] = json.loads(net.get(f"https://api.github.com/repos/{clean_src}/releases?per_page=1", headers=net.gh_headers))
         upstream_rel = releases[0] if releases else {}
-        changelog_text = upstream_rel.get("body", "") or ""
-        upstream_date = upstream_rel.get("published_at", "") or ""
+        changelog_text = str(upstream_rel.get("body") or "")
+        upstream_date = str(upstream_rel.get("published_at") or "")
     else:
-        upstream_rel = json.loads(net.get(f"https://api.github.com/repos/{clean_src}/releases/latest", headers=net._gh_headers))
-        changelog_text = upstream_rel.get("body", "") or ""
-        upstream_date = upstream_rel.get("published_at", "") or ""
+        upstream_rel = json.loads(net.get(f"https://api.github.com/repos/{clean_src}/releases/latest", headers=net.gh_headers))
+        changelog_text = str(upstream_rel.get("body") or "")
+        upstream_date = str(upstream_rel.get("published_at") or "")
     return changelog_text, upstream_date
 
 def _fetch_our_releases(repo: str, net: NetworkManager) -> dict[str, str]:
     our_releases_by_brand: dict[str, str] = {}
     try:
-        our_releases_raw = net.get(f"https://api.github.com/repos/{repo}/releases?per_page=100", headers=net._gh_headers)
-        for rel in json.loads(our_releases_raw):
-            tag = rel.get("tag_name", "")
+        our_releases_raw = net.get(f"https://api.github.com/repos/{repo}/releases?per_page=100", headers=net.gh_headers)
+        releases: list[dict[str, Any]] = json.loads(our_releases_raw)
+        for rel in releases:
+            tag = str(rel.get("tag_name") or "")
             brand = tag.split("-", 1)[1] if "-" in tag else ""
             if brand and brand not in our_releases_by_brand:
-                our_releases_by_brand[brand] = rel.get("published_at", "") or ""
+                our_releases_by_brand[brand] = str(rel.get("published_at") or "")
     except Exception as exc:
         epr(f"Failed to fetch our releases: {exc}")
         our_releases_by_brand = {}
     return our_releases_by_brand
 
-def _load_entries() -> list:
+def _load_entries() -> list[AppEntry]:
     data = load_toml(CONFIG_PATH)
     return parse_app_entries(data, parse_config(data))
 
@@ -68,7 +71,7 @@ def get_matrix(source: str) -> None:
     patches_source = ""
     has_changelog_keywords = False
     is_prerelease = False
-    staged: list = []
+    staged: list[AppEntry] = []
     for entry in _load_entries():
         if not entry.enabled or entry.brand.lower() != source_lower:
             continue
@@ -131,7 +134,7 @@ def check_builds_needed(force_all: bool = False) -> None:
     if not repo:
         abort("GITHUB_REPOSITORY environment variable is not set")
 
-    entries_by_brand: dict[str, list] = {}
+    entries_by_brand: dict[str, list[AppEntry]] = {}
     for entry in entries:
         if entry.enabled:
             entries_by_brand.setdefault(entry.brand.lower(), []).append(entry)

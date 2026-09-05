@@ -17,6 +17,7 @@ import shlex
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypedDict, cast
 
 TEMP_DIR: Path = Path("temp")
 BUILD_DIR: Path = Path("build")
@@ -33,6 +34,11 @@ class Config:
     brand: str
     strict_sigcheck: bool
 
+class PatchSpec(TypedDict):
+    version: str
+    include: list[str]
+    exclude: list[str]
+
 @dataclass(slots=True, frozen=True)
 class AppEntry:
     table: str
@@ -43,7 +49,7 @@ class AppEntry:
     version: str
     dl_urls: dict[str, str]
     patcher_args: list[str]
-    patches: dict[str, dict]
+    patches: dict[str, PatchSpec]
     exclusive_patches: bool
     cli_source: str
     cli_version: str
@@ -64,7 +70,7 @@ def _parse_bool(d: dict[str, object], key: str, default: bool) -> bool:
 
 def parse_config(data: dict[str, object]) -> Config:
     return Config(
-        parallel_jobs=int(data.get("parallel-jobs", os.process_cpu_count() or 1)),
+        parallel_jobs=int(str(data.get("parallel-jobs", os.process_cpu_count() or 1))),
         brand=str(data.get("brand", "Morphe")),
         cli_version=str(data.get("cli-version", "latest")),
         cli_source=str(data.get("cli-source", "github:MorpheApp/morphe-desktop")),
@@ -76,6 +82,7 @@ def parse_app_entries(data: dict[str, object], main: Config) -> list[AppEntry]:
     for table_name, t in data.items():
         if not isinstance(t, dict):
             continue
+        t = cast(dict[str, object], t)
 
         if (arch := str(t.get("arch", "all"))) not in VALID_ARCHES:
             raise ValueError(f"Wrong arch '{arch}' for '{table_name}'")
@@ -89,20 +96,22 @@ def parse_app_entries(data: dict[str, object], main: Config) -> list[AppEntry]:
         raw_patches = t.get("patches", {})
         if not isinstance(raw_patches, dict):
             raise ValueError(f"'patches' for '{table_name}' must be a TOML table")
+        raw_patches_d = cast(dict[str, object], raw_patches)
 
-        patches: dict[str, dict] = {}
-        for k, v in raw_patches.items():
+        patches: dict[str, PatchSpec] = {}
+        for k, v in raw_patches_d.items():
             if isinstance(v, list):
-                patches[str(k)] = {"version": "latest", "include": [str(p) for p in v], "exclude": []}
+                patches[str(k)] = PatchSpec(version="latest", include=[str(p) for p in cast(list[object], v)], exclude=[])
             elif isinstance(v, dict):
-                patches[str(k)] = {"version": str(v.get("version", "latest")), "include": [str(p) for p in v.get("include", [])], "exclude": [str(p) for p in v.get("exclude", [])]}
+                v_d = cast(dict[str, object], v)
+                patches[str(k)] = PatchSpec(version=str(v_d.get("version", "latest")), include=[str(p) for p in cast(list[object], v_d.get("include", []))], exclude=[str(p) for p in cast(list[object], v_d.get("exclude", []))])
 
         raw_keywords = t.get("changelog-keywords")
         if raw_keywords is not None and not isinstance(raw_keywords, list):
             raise ValueError(f"'changelog-keywords' must be a list for '{table_name}'")
 
         keywords: list[str] = []
-        for k in (raw_keywords or []):
+        for k in cast(list[object], raw_keywords or []):
             s = str(k).strip()
             if s:
                 keywords.append(s.lower())
