@@ -28,7 +28,7 @@ _KNOWN_PREFIXES: tuple[str, ...] = ("gitlab:", "github:")
 class PrebuiltsError(Exception):
     pass
 
-def _ver_key(ver: str) -> tuple[int, ...]:
+def ver_key(ver: str) -> tuple[int, ...]:
     base = ver.partition("-")[0]
     return tuple(int(x) for x in re.findall(r"\d+", base)) or (0,)
 
@@ -42,7 +42,7 @@ def get_highest_ver(versions: list[str]) -> str:
     clean = [v.strip() for v in versions if v.strip()]
     if not clean:
         raise ValueError("Empty version list")
-    return max(clean, key=_ver_key)
+    return max(clean, key=ver_key)
 
 def fetch_cli(cli_src: str, cli_ver: str, net: NetworkManager) -> Path:
     cli_org = _strip_src_prefix(cli_src).partition("/")[0]
@@ -144,7 +144,7 @@ def _find_cached(dir_path: Path, name_ver: str, ext: str) -> Path | None:
         if not path.is_file() or path.name.startswith("tmp."):
             continue
         candidates.append(path)
-    return max(candidates, key=lambda p: _ver_key(p.name), default=None)
+    return max(candidates, key=lambda p: ver_key(p.name), default=None)
 
 def _tag_from_filename(file: Path) -> str:
     if m := re.search(r"-(\d[\w.]*)(?:-[^.]+)?\.\w+$", file.name):
