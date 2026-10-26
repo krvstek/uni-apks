@@ -57,7 +57,7 @@ jobs:
   build-morphe:
     name: build (Morphe)
     needs: check-versions
-    if: contains(fromJson(needs.check-versions.outputs.build_matrix), 'morphe')
+    if: contains(fromJSON(needs.check-versions.outputs.build_matrix), 'morphe')
     uses: ./.github/workflows/build.yml
     with:
       patch_source: 'morphe'
@@ -67,7 +67,7 @@ jobs:
   build-piko:
     name: build (Piko)
     needs: check-versions
-    if: contains(fromJson(needs.check-versions.outputs.build_matrix), 'piko')
+    if: contains(fromJSON(needs.check-versions.outputs.build_matrix), 'piko')
     uses: ./.github/workflows/build.yml
     with:
       patch_source: 'piko'
