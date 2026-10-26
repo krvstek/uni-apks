@@ -22,14 +22,14 @@ from src.core.logger import pr, wpr
 from src.core.network import NetworkManager
 
 APKSIGNER: Path = Path("bin/apksigner.jar")
-_KNOWN_PREFIXES = ("gitlab:", "github:")
+_KNOWN_PREFIXES: tuple[str, ...] = ("gitlab:", "github:")
 
 
 class PrebuiltsError(Exception):
     pass
 
 def _ver_key(ver: str) -> tuple[int, ...]:
-    base = ver.split("-")[0]
+    base = ver.partition("-")[0]
     return tuple(int(x) for x in re.findall(r"\d+", base)) or (0,)
 
 def _strip_src_prefix(src: str) -> str:
@@ -45,7 +45,7 @@ def get_highest_ver(versions: list[str]) -> str:
     return max(clean, key=_ver_key)
 
 def fetch_cli(cli_src: str, cli_ver: str, net: NetworkManager) -> Path:
-    cli_org = _strip_src_prefix(cli_src).split("/")[0]
+    cli_org = _strip_src_prefix(cli_src).partition("/")[0]
     cli_dir = TEMP_DIR / cli_org.lower()
     cli_dir.mkdir(parents=True, exist_ok=True)
     jar, changelog = _fetch_single_asset(cli_src, "CLI", cli_ver, "jar", cli_dir, net)
@@ -55,7 +55,7 @@ def fetch_cli(cli_src: str, cli_ver: str, net: NetworkManager) -> Path:
     return jar
 
 def fetch_mpp(src: str, ver: str, net: NetworkManager) -> Path:
-    org = _strip_src_prefix(src).split("/")[0]
+    org = _strip_src_prefix(src).partition("/")[0]
     cl_dir = TEMP_DIR / org.lower()
     cl_dir.mkdir(parents=True, exist_ok=True)
     mpp, changelog = _fetch_single_asset(src, "Patches", ver, "mpp", cl_dir, net)
@@ -96,14 +96,14 @@ def _build_changelog(tag: str, org: str, name: str, tag_name: str, gitlab: bool,
 def _fetch_single_asset(src: str, tag: str, ver: str, ext: str, cl_dir: Path, net: NetworkManager) -> tuple[Path, str]:
     gitlab = src.startswith("gitlab:")
     clean_src = _strip_src_prefix(src)
-    org = clean_src.split("/")[0]
+    org = clean_src.partition("/")[0]
     if gitlab:
         project = clean_src.replace("/", "%2F")
         base_url = f"https://gitlab.com/api/v4/projects/{project}/releases"
     else:
         base_url = f"https://api.github.com/repos/{clean_src}/releases"
 
-    release = None
+    release: dict[str, Any] = {}
     if ver == "dev":
         releases = json.loads(net.get(base_url) if gitlab else net.get(base_url, headers=net.gh_headers))
         ver = get_highest_ver([r["tag_name"] for r in releases if r.get("tag_name")])
@@ -116,7 +116,7 @@ def _fetch_single_asset(src: str, tag: str, ver: str, ext: str, cl_dir: Path, ne
         tag_name = _tag_from_filename(file)
         return file, _build_changelog(tag, org, file.name, tag_name, gitlab, clean_src)
 
-    if release is None:
+    if not release:
         release_url = f"{base_url}/{ver}" if gitlab else f"{base_url}/tags/{ver}"
         release = json.loads(net.get(release_url) if gitlab else net.get(release_url, headers=net.gh_headers))
 
@@ -140,14 +140,13 @@ def _fetch_single_asset(src: str, tag: str, ver: str, ext: str, cl_dir: Path, ne
 def _find_cached(dir_path: Path, name_ver: str, ext: str) -> Path | None:
     pattern = f"*.{ext}" if name_ver == "*" else f"*{name_ver.lstrip('v')}*.{ext}"
     candidates: list[Path] = []
-    for f in dir_path.glob(pattern):
-        if not f.is_file() or f.name.startswith("tmp."):
+    for path in dir_path.glob(pattern):
+        if not path.is_file() or path.name.startswith("tmp."):
             continue
-        candidates.append(f)
-    return max(candidates, key=lambda f: _ver_key(f.name), default=None)
+        candidates.append(path)
+    return max(candidates, key=lambda p: _ver_key(p.name), default=None)
 
 def _tag_from_filename(file: Path) -> str:
-    m = re.search(r"-(\d[\w.]*)(?:-[^.]+)?\.\w+$", file.name)
-    if m:
+    if m := re.search(r"-(\d[\w.]*)(?:-[^.]+)?\.\w+$", file.name):
         return f"v{m.group(1)}"
     return ""

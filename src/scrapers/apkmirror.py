@@ -14,6 +14,7 @@
 
 import re  # noqa: I001
 from pathlib import Path
+from typing import override
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
@@ -32,9 +33,10 @@ class APKMirrorScraper(BaseScraper):
         self._category: str = ""
         self._release_urls: dict[str, str] = {}
 
+    @override
     def fetch_metadata(self, url: str) -> AppMetadata:
         resp_html = self.net.get(url)
-        self._category = url.rstrip("/").split("/")[-1]
+        self._category = url.rstrip("/").rpartition("/")[2]
         m = re.search(r"play\.google\.com/store/apps/details\?id=([\w.]+)", resp_html)
         if not m:
             raise APKMirrorError("Package name not found")
@@ -50,8 +52,9 @@ class APKMirrorScraper(BaseScraper):
             versions.append(v)
         return AppMetadata(pkg_name=m.group(1), versions=versions)
 
+    @override
     def download(self, url: str, version: str, dest: Path, arch: str, dpi: str, version_code: str | None = None) -> DownloadResult:
-        clean_ver = version.split("-")[0]
+        clean_ver = version.partition("-")[0]
         release_url = self._release_urls.get(version) or self._release_urls.get(clean_ver)
         if release_url is None:
             for k, u in self._release_urls.items():
@@ -101,7 +104,8 @@ class APKMirrorScraper(BaseScraper):
         self.net.download(final_url, out_path)
         return DownloadResult(path=out_path, is_bundle=is_bundle)
 
-    def _pick_variant(self, soup: BeautifulSoup, dpi: str, arch: str, version_code: str | None = None, version: str = "") -> tuple[str, str] | None:
+    @staticmethod
+    def _pick_variant(soup: BeautifulSoup, dpi: str, arch: str, version_code: str | None = None, version: str = "") -> tuple[str, str] | None:
         apparch: set[str] = set(_DEFAULT_ARCH)
         if arch != "all":
             apparch.add(arch)

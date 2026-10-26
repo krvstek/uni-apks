@@ -2,7 +2,7 @@
 name = "uni-apks"
 version = "0.0.0"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 authors = [
     { name = "krvstek" }
 ]
@@ -14,14 +14,8 @@ dependencies = [
 ]
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "A", "ISC", "UP", "RUF", "SIM", "C4", "PTH", "G", "PIE", "RSE"]
 ignore = ["E501"]
-
-[tool.pyright]
-pythonVersion = "3.13"
-pythonPlatform = "Linux"
-include = ["src", "main.py"]
-typeCheckingMode = "strict" 

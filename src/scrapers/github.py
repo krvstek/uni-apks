@@ -14,7 +14,7 @@
 import json
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, override
 
 from src.core.network import NetworkManager, ResourceNotFoundError
 from src.scrapers.base import AppMetadata, BaseScraper, DownloadResult, ScraperError
@@ -31,6 +31,7 @@ class GitHubScraper(BaseScraper):
         super().__init__(net)
         self._assets: list[dict[str, Any]] = []
 
+    @override
     def fetch_metadata(self, url: str) -> AppMetadata:
         m = _GH_URL.search(url)
         if not m:
@@ -55,6 +56,7 @@ class GitHubScraper(BaseScraper):
             seen[_ARCH_SUFFIX.sub("", name.removeprefix(prefix))] = None
         return AppMetadata(pkg_name=pkg_name, versions=list(seen) or [tag])
 
+    @override
     def download(self, url: str, version: str, dest: Path, arch: str, dpi: str, version_code: str | None = None) -> DownloadResult:
         if not self._assets:
             self.fetch_metadata(url)
@@ -69,12 +71,10 @@ class GitHubScraper(BaseScraper):
 
             m = _ARCH_SUFFIX.search(name)
             file_arch = m.group(1).lower() if m and m.group(1) else "all"
-            if arch in ("all", "both"):
-                if file_arch != "all":
-                    continue
-            else:
-                if file_arch not in (arch, "all"):
-                    continue
+            if arch in ("all", "both") and file_arch != "all":
+                continue
+            if arch not in ("all", "both") and file_arch not in (arch, "all"):
+                continue
 
             asset = a
             break

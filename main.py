@@ -12,13 +12,13 @@
 # See the AUTHORS file in the root directory for details.
 # ---------------------------------------------------------
 
-import os  # noqa: I001
+import os
 import re
 import shutil
 import signal
 import subprocess
 import sys
-from copy import replace
+from dataclasses import replace
 from pathlib import Path
 
 from src.core.builder import run_build
@@ -51,7 +51,6 @@ def _require_java(min_version: int = 21) -> None:
     match = re.search(r'version "(\d+)', result.stderr)
     if not match:
         abort("Could not determine Java version")
-    assert match
 
     version = int(match.group(1))
     if version < min_version:
@@ -93,7 +92,7 @@ def _clear() -> int:
     pr("Cleaned successfully" if cleaned else "Already clean")
     return 0
 
-def _sigint_handler(sig: int, frame: object) -> None:
+def _sigint_handler(_sig: int, _frame: object) -> None:
     global _shutting_down
     if _shutting_down:
         return
@@ -115,8 +114,10 @@ def main() -> None:
             sys.exit(_build())
         case ["clear"]:
             sys.exit(_clear())
-        case [target, *rest] if not rest or rest[0] in VALID_ARCHES:
-            sys.exit(_build(target_app=target, arch_override=rest[0] if rest else None))
+        case [target]:
+            sys.exit(_build(target_app=target))
+        case [target, arch] if arch in VALID_ARCHES:
+            sys.exit(_build(target_app=target, arch_override=arch))
         case [_, arch]:
             abort(f"Unknown arch '{arch}'. Valid: {', '.join(sorted(VALID_ARCHES))}")
         case _:

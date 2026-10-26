@@ -39,7 +39,7 @@ def _parse_final_md(final_md: Path) -> tuple[list[str], str, list[str]]:
         elif not microg_line and stripped.startswith("▶️"):
             microg_line = stripped
         elif stripped.startswith("[🔗"):
-            if m := re.search(r"\[(.*?)\]\((.*?)\)", stripped):
+            if m := re.search(r"\[(.*?)]\((.*?)\)", stripped):
                 link_text, url = m.group(1), m.group(2)
                 org = url.split("/")[3] if url.count("/") >= 3 else ""
                 changelog_lines.append(f"[{link_text} ({org})]({url})" if org else stripped)
@@ -57,7 +57,7 @@ def _build_message(brand: str, green_lines: list[str], microg_line: str, changel
         parts.extend(changelog_lines)
     return "\n".join(parts)
 
-def notify(brand: str, final_md_path: str = "final.md") -> None:
+def notify(brand: str, final_md_path: Path | str = "final.md") -> None:
     token = os.getenv("TG_TOKEN")
     chat = os.getenv("TG_CHAT")
     if not token or not chat:
@@ -65,7 +65,7 @@ def notify(brand: str, final_md_path: str = "final.md") -> None:
         return
 
     path = Path(final_md_path)
-    if not path.exists() or not path.stat().st_size:
+    if not path.is_file() or path.stat().st_size == 0:
         epr(f"'{final_md_path}' not found or empty, skipping notification")
         return
 
@@ -78,6 +78,7 @@ def notify(brand: str, final_md_path: str = "final.md") -> None:
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {"chat_id": chat, "text": msg, "parse_mode": "Markdown", "link_preview_options": {"is_disabled": True}}
     pr(f"Sending Telegram notification for '{brand}' to '{chat}'")
+    # noinspection PyArgumentList
     with curl_requests.Session() as session:
         resp = session.post(url, json=payload, timeout=(5, 10))
         if resp.status_code != 200:

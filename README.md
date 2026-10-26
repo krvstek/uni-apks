@@ -1,7 +1,7 @@
 <div align="center">
-<a href="#-features"><img src="https://readme-typing-svg.demolab.com/?font=Google+Sans&size=25&pause=1000&color=4500FF&center=true&vCenter=true&random=false&width=550&lines=%F0%9F%93%A6+Pre-built+APKs+from+various+patch+sources"></a>
+<a href="#features"><img src="https://readme-typing-svg.demolab.com/?font=Google+Sans&size=25&pause=1000&color=4500FF&center=true&vCenter=true&random=false&width=550&lines=%F0%9F%93%A6+Pre-built+APKs+from+various+patch+sources" alt="Pre-built APKs from various patch sources"></a>
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/krvstek/uni-apks/ci.yml?style=flat-square&logo=githubactions&logoColor=%23FFFFFF&label=Build%20Status&color=%234500FF)](https://github.com/krvstek/uni-apks/actions/workflows/ci.yml)   [![Python 3.13](https://img.shields.io/badge/Python-3.13+-4500FF?style=flat-square&logo=python&logoColor=%23FFFFFF)](https://www.python.org/downloads/)   [![Telegram](https://img.shields.io/badge/Telegram-Channel-4500FF?style=flat-square&logo=telegram&logoColor=%23FFFFFF)](https://t.me/uni_apks)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/krvstek/uni-apks/ci.yml?style=flat-square&logo=githubactions&logoColor=%23FFFFFF&label=Build%20Status&color=%234500FF)](https://github.com/krvstek/uni-apks/actions/workflows/ci.yml)   [![Python 3.14](https://img.shields.io/badge/Python-3.14+-4500FF?style=flat-square&logo=python&logoColor=%23FFFFFF)](https://www.python.org/downloads/)   [![Telegram](https://img.shields.io/badge/Telegram-Channel-4500FF?style=flat-square&logo=telegram&logoColor=%23FFFFFF)](https://t.me/uni_apks)
 <br>
 [![Downloads](https://img.shields.io/github/downloads/krvstek/uni-apks/total?style=flat-square&logo=simpleanalytics&logoColor=%23FFFFFF&label=Downloads&color=%234500FF)](https://github.com/krvstek/uni-apks#-list-of-apps-in-this-repository)   [![Views](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2Fkrvstek%2Funi-apks&label=Views&icon=eye-fill&color=%234500ff&message=&style=flat-square&tz=Europe%2FWarsaw)](https://github.com/krvstek/uni-apks#-list-of-apps-in-this-repository)
 <br>
@@ -22,7 +22,7 @@ Here you can download and use applications selected for this repository, which a
 ## 📋 List of apps in this repository
 
 <details>
-<summary>🧩 <a href="https://github.com/MorpheApp/morphe-patches"><code>Morphe</code></a> • <a href="https://github.com/krvstek/uni-apks/releases?q=-morphe&expanded=true"><img src="https://img.shields.io/badge/All-Releases-4500FF?style=flat-square&logo=android&logoColor=%23FFFFFF" alt="Static Badge" align="absmiddle"></summary>
+<summary>🧩 <a href="https://github.com/MorpheApp/morphe-patches"><code>Morphe</code></a> • <a href="https://github.com/krvstek/uni-apks/releases?q=-morphe&expanded=true"><img src="https://img.shields.io/badge/All-Releases-4500FF?style=flat-square&logo=android&logoColor=%23FFFFFF" alt="Static Badge" align="absmiddle"></a></summary>
 <br>
 
 | 📦 Name | 💎 Obtainium |
@@ -33,7 +33,7 @@ Here you can download and use applications selected for this repository, which a
 </details>
 
 <details>
-<summary>🧩 <a href="https://github.com/crimera/piko"><code>Piko</code></a> • <a href="https://github.com/krvstek/uni-apks/releases?q=-piko&expanded=true"><img src="https://img.shields.io/badge/All-Releases-4500FF?style=flat-square&logo=android&logoColor=%23FFFFFF" alt="Static Badge" align="absmiddle"></summary>
+<summary>🧩 <a href="https://github.com/crimera/piko"><code>Piko</code></a> • <a href="https://github.com/krvstek/uni-apks/releases?q=-piko&expanded=true"><img src="https://img.shields.io/badge/All-Releases-4500FF?style=flat-square&logo=android&logoColor=%23FFFFFF" alt="Static Badge" align="absmiddle"></a></summary>
 <br>
 
 | 📦 Name | 💎 Obtainium |

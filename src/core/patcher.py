@@ -22,7 +22,11 @@ from src.core.config import PatchSpec
 from src.core.logger import pr, wpr
 from src.core.prebuilts import get_highest_ver
 
-_SECRET_PATTERNS = re.compile(r"(keystore-password=|keystore-entry-password=)\S+")
+_SECRET_PATTERNS: re.Pattern[str] = re.compile(r"(keystore-password=|keystore-entry-password=)\S+")
+_ARCH_MAP: dict[str, str] = {
+    "arm64-v8a": "ARM64_V8A", "armeabi-v7a": "ARMEABI_V7A", 
+    "x86": "X86", "x86_64": "X86_64"
+}
 
 
 class PatcherError(Exception):
@@ -50,7 +54,7 @@ def _parse_versions_output(output: str) -> list[str]:
     if marker not in output:
         return []
 
-    block = output.split(marker)[1].split("\n\n")[0]
+    block = output.partition(marker)[2].partition("\n\n")[0]
     versions: list[str] = []
     for line in block.splitlines():
         parts = line.split()
@@ -59,11 +63,7 @@ def _parse_versions_output(output: str) -> list[str]:
     return versions
 
 def _extract_version_code(output: str, version: str, arch: str) -> str | None:
-    arch_map = {
-        "arm64-v8a": "ARM64_V8A", "armeabi-v7a": "ARMEABI_V7A", 
-        "x86": "X86", "x86_64": "X86_64"
-    }
-    target_arch = arch_map.get(arch.lower(), "ARM64_V8A")
+    target_arch = _ARCH_MAP.get(arch.lower(), "ARM64_V8A")
     if m := re.search(rf"{re.escape(version)}.*?{target_arch}=(\d+)", output, re.IGNORECASE):
         return m.group(1)
     return None
@@ -78,7 +78,7 @@ class PatcherCLI:
         self.apksigner = apksigner
         self.ks_path = ks_path
         self._signatures: dict[str, str] = {}
-        if sig_file.exists():
+        if sig_file.is_file():
             for line in sig_file.read_text(encoding="utf-8").splitlines():
                 if parts := line.split():
                     self._signatures[parts[-1]] = parts[0].lower()
@@ -119,7 +119,8 @@ class PatcherCLI:
         highest = get_highest_ver(versions)
         return (highest, _extract_version_code(versions_output, highest, arch)) if highest else None
 
-    def resolve_auto_patches(self, list_patches_output: str) -> tuple[str, str]:
+    @staticmethod
+    def resolve_auto_patches(list_patches_output: str) -> tuple[str, str]:
         microg_patch = psu_patch = ""
         for line in list_patches_output.splitlines():
             line_lower = line.lower()

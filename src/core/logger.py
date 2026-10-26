@@ -15,8 +15,8 @@ import os
 import sys
 from typing import Never
 
-IS_GITHUB = os.getenv("GITHUB_ACTIONS") == "true"
-_interrupted = False
+IS_GITHUB: bool = os.getenv("GITHUB_ACTIONS") == "true"
+_interrupted: bool = False
 
 
 def is_interrupted() -> bool:

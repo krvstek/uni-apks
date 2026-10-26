@@ -36,7 +36,7 @@ def _parse_log_file(log: Path, green_lines: list[str], collected: list[str]) -> 
             collected.append(f"{line}  \n{next_line}  ")
     return microg_line
 
-def combine_logs(logs_dir: Path | str) -> None:
+def combine_logs(logs_dir: Path | str = "logs") -> None:
     logs = sorted(Path(logs_dir).rglob("build*.md"))
     if not logs:
         return
@@ -61,8 +61,10 @@ def combine_logs(logs_dir: Path | str) -> None:
 def main() -> None:
     _require_ci("logs.py")
     match sys.argv[1:]:
-        case ["combine-logs", *args]:
-            combine_logs(logs_dir=Path(args[0] if args else "logs"))
+        case ["combine-logs"]:
+            combine_logs()
+        case ["combine-logs", logs_dir]:
+            combine_logs(logs_dir)
         case _:
             abort("Usage: logs.py combine-logs [dir]")
 

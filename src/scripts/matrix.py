@@ -12,7 +12,7 @@
 # See the AUTHORS file in the root directory for details.
 # ---------------------------------------------------------
 
-import json  # noqa: I001
+import json
 import os
 import sys
 from datetime import datetime
@@ -28,7 +28,7 @@ def _require_ci(script: str) -> None:
         abort(f"'{script}' is only available in GitHub Actions")
 
 def _fetch_latest_release(source: str, net: NetworkManager, version: str = "latest") -> tuple[str, str]:
-    scheme, clean_src = source.split(":", 1)
+    scheme, _, clean_src = source.partition(":")
     upstream_rel: dict[str, Any]
     if scheme == "gitlab":
         project = clean_src.replace("/", "%2F")
@@ -53,7 +53,7 @@ def _fetch_our_releases(repo: str, net: NetworkManager) -> dict[str, str]:
         releases: list[dict[str, Any]] = json.loads(our_releases_raw)
         for rel in releases:
             tag = str(rel.get("tag_name") or "")
-            brand = tag.split("-", 1)[1] if "-" in tag else ""
+            brand = tag.partition("-")[2]
             if brand and brand not in our_releases_by_brand:
                 our_releases_by_brand[brand] = str(rel.get("published_at") or "")
     except Exception as exc:

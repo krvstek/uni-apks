@@ -27,6 +27,7 @@ from src.core.prebuilts import APKSIGNER, fetch_cli, fetch_mpp, get_highest_ver
 from src.scrapers.base import BaseScraper, DownloadResult, ScraperError
 
 _failed_signatures: set[str] = set()
+_BLOCK_RE: re.Pattern[str] = re.compile(r"^> ⚙️ » (CLI|Patches):.*?(?=^> ⚙️ »|\Z)", re.MULTILINE | re.DOTALL)
 
 
 class BuilderError(Exception):
@@ -65,7 +66,7 @@ def _resolve_version(entry: AppEntry, patcher: PatcherCLI, list_patches: str, pk
         if not version:
             raise BuilderError("Could not determine version")
         is_custom = True
-    elif (v := patcher.get_last_supported_version(list_patches, pkg_name, entry.patches, arch=arch, experimental=entry.version == "exp")):
+    elif v := patcher.get_last_supported_version(list_patches, pkg_name, entry.patches, arch=arch, experimental=entry.version == "exp"):
         version, vcode = v
         is_custom = False
     else:
@@ -243,20 +244,15 @@ def run_build(entries: list[AppEntry], config: Config, net: NetworkManager) -> b
     for tmp in TEMP_DIR.rglob("tmp*"):
         shutil.rmtree(tmp, ignore_errors=True)
 
-    log_lines: list[str] = []
-    for fut in as_completed(futures):
-        if r := fut.result():
-            log_lines.append(r)
-
+    log_lines = [r for fut in as_completed(futures) if (r := fut.result())]
     if not log_lines:
         epr("All builds failed")
         return False
 
     raw = "".join(cl.read_text(encoding="utf-8") for cl in sorted(TEMP_DIR.glob("*/changelog.md")))
-    block_re = re.compile(r"^> ⚙️ » (CLI|Patches):.*?(?=^> ⚙️ »|\Z)", re.MULTILINE | re.DOTALL)
     cli_blocks: list[str] = []
     patch_blocks: list[str] = []
-    for m in block_re.finditer(raw):
+    for m in _BLOCK_RE.finditer(raw):
         (cli_blocks if m.group(1) == "CLI" else patch_blocks).append(m.group())
     changelogs = "".join(cli_blocks) + "".join(patch_blocks)
     microg_line = "▶️ » Install [MicroG-RE](https://github.com/MorpheApp/MicroG-RE/releases) to enable Google account sign-in for supported apps\n"

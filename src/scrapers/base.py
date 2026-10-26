@@ -47,9 +47,7 @@ class BaseScraper(ABC):
         return self._cache[url]
 
     @abstractmethod
-    def fetch_metadata(self, url: str) -> AppMetadata:
-        pass
+    def fetch_metadata(self, url: str) -> AppMetadata: ...
 
     @abstractmethod
-    def download(self, url: str, version: str, dest: Path, arch: str, dpi: str, version_code: str | None = None) -> DownloadResult:
-        pass
+    def download(self, url: str, version: str, dest: Path, arch: str, dpi: str, version_code: str | None = None) -> DownloadResult: ...
