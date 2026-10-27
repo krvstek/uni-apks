@@ -83,7 +83,8 @@ def _resolve_version(entry: AppEntry, patcher: PatcherCLI, list_patches: str, pk
 def _download_apk(entry: AppEntry, version: str, arch: str, pkg_name: str, scrapers: dict[str, BaseScraper], dl_from: str, failed_sources: set[str], version_code: str | None = None) -> DownloadResult:
     arch_f = arch.replace(" ", "")
     version_f = version.replace(" ", "").lstrip("v")
-    base_name = f"{pkg_name}-v{version_f}-{arch_f}.apk"
+    dpi_suffix = f"_{entry.dpi.replace(' ', '')}" if entry.dpi else ""
+    base_name = f"{pkg_name}-v{version_f}-{arch_f}{dpi_suffix}.apk"
     stock_apk = TEMP_DIR / base_name
     if stock_apk.exists():
         return DownloadResult(path=stock_apk, is_bundle=False)
@@ -102,7 +103,8 @@ def _download_apk(entry: AppEntry, version: str, arch: str, pkg_name: str, scrap
         try:
             return scrapers[src].download(url, version, stock_apk, arch, entry.dpi, version_code=version_code)
         except (NetworkError, ScraperError) as exc:
-            epr(f"Failed to fetch '{entry.table}' from '{src}' (version='{version}', arch='{arch}'): {exc}")
+            dpi_str = f", dpi='{entry.dpi}'" if entry.dpi else ""
+            epr(f"Failed to fetch '{entry.table}' from '{src}' (version='{version}', arch='{arch}'{dpi_str}): {exc}")
     raise BuilderError("Stock APK not found")
 
 def _extract_base_apk(apkm: Path, pkg_name: str, dest_dir: Path) -> Path:
@@ -219,7 +221,10 @@ def _submit_entries(entries: list[AppEntry], pool: ThreadPoolExecutor, net: Netw
         patcher = PatcherCLI(cli_cache[cli_key], app_mpp_map, APKSIGNER, ks_path=ks_path)
         arches = ("arm64-v8a", "armeabi-v7a") if entry.arch == "both" else (entry.arch,)
         for arch in arches:
-            label = entry.app_name if entry.arch == "all" else f"{entry.app_name} ({arch})"
+            details = [arch] if arch != "all" else []
+            if entry.dpi:
+                details.append(entry.dpi)
+            label = f"{entry.app_name} ({', '.join(details)})" if details else entry.app_name
             futures.append(pool.submit(_build_single, entry, arch, label, net, patcher, strict_sigcheck))
     return futures
 

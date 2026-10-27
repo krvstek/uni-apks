@@ -111,41 +111,50 @@ class APKMirrorScraper(BaseScraper):
             apparch.add(arch)
 
         rows = soup.select("div.table-row.headerFont")
-        for bundle_type in ("APK", "BUNDLE"):
-            for row in reversed(rows):
-                cells = row.select("div.table-cell")
-                if len(cells) < 4:
-                    continue
+        passes = tuple(d.strip().lower() for d in dpi.split(",") if d.strip()) if dpi else ("nodpi", "-480dpi", "-640dpi")
+        for target in passes:
+            clean = target.lstrip("-").removesuffix("dpi")
+            for bundle_type in ("APK", "BUNDLE"):
+                for row in reversed(rows):
+                    cells = row.select("div.table-cell")
+                    if len(cells) < 4:
+                        continue
 
-                link = cells[0].select_one("a")
-                if not link or not link.get("href"):
-                    continue
+                    link = cells[0].select_one("a")
+                    if not link or not link.get("href"):
+                        continue
 
-                badge = cells[0].select_one(".apkm-badge")
-                b_type = badge.get_text(strip=True).upper() if badge else "APK"
+                    badge = cells[0].select_one(".apkm-badge")
+                    b_type = badge.get_text(strip=True).upper() if badge else "APK"
 
-                row_title = link.get_text(strip=True)
-                if version and ("beta" not in version.lower()) and ("beta" in row_title.lower()):
-                    continue
-                if version and ("lite" not in version.lower()) and ("lite" in row_title.lower()):
-                    continue
+                    row_title = link.get_text(strip=True)
+                    if version and ("beta" not in version.lower()) and ("beta" in row_title.lower()):
+                        continue
+                    if version and ("lite" not in version.lower()) and ("lite" in row_title.lower()):
+                        continue
 
-                extracted_vcode = None
-                for span in cells[0].select("span.colorLightBlack"):
-                    if "wrapText" not in (span.get("class") or []) and not span.select_one(".dateyear_utc"):
-                        txt = span.get_text(strip=True)
-                        if txt.isdigit():
-                            extracted_vcode = txt
-                            break
+                    extracted_vcode = None
+                    for span in cells[0].select("span.colorLightBlack"):
+                        if "wrapText" not in (span.get("class") or []) and not span.select_one(".dateyear_utc"):
+                            txt = span.get_text(strip=True)
+                            if txt.isdigit():
+                                extracted_vcode = txt
+                                break
 
-                if version_code is not None:
-                    if extracted_vcode == version_code and b_type == bundle_type:
+                    arch_text = cells[1].get_text(strip=True)
+                    dpi_text = cells[3].get_text(strip=True).lower()
+                    if target in ("all", "any"):
+                        dpi_ok = True
+                    elif target in ("nodpi", "anydpi"):
+                        dpi_ok = not dpi_text or dpi_text in {"nodpi", "anydpi"}
+                    else:
+                        dpi_ok = dpi_text == target or dpi_text == f"{clean}dpi" or dpi_text.endswith(f"-{clean}dpi")
+
+                    if version_code is not None:
+                        if extracted_vcode == version_code and b_type == bundle_type and (not dpi or dpi_ok):
+                            return urljoin("https://www.apkmirror.com", str(link["href"])), bundle_type
+                        continue
+
+                    if b_type == bundle_type and arch_text in apparch and dpi_ok:
                         return urljoin("https://www.apkmirror.com", str(link["href"])), bundle_type
-                    continue
-
-                arch_text = cells[1].get_text(strip=True)
-                dpi_text = cells[3].get_text(strip=True)
-                dpi_ok = not dpi_text or re.match(r"\d+-640dpi", dpi_text) or dpi_text in {"nodpi", "anydpi"} or (dpi and dpi_text == dpi)
-                if b_type == bundle_type and arch_text in apparch and dpi_ok:
-                    return urljoin("https://www.apkmirror.com", str(link["href"])), bundle_type
         return None

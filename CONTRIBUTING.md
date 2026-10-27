@@ -33,6 +33,8 @@ No further setup needed, as `uv` handles the Python environment and dependencies
 uv run main.py # build all apps
 uv run main.py SomeApp # build a specific app
 uv run main.py SomeApp arm64-v8a # build with arch override
+uv run main.py SomeApp nodpi # build with dpi override
+uv run main.py SomeApp arm64-v8a nodpi # build with arch and dpi override
 uv run main.py clear # remove build/, temp/ and build.md
 ```
 
@@ -77,6 +79,7 @@ apkmirror-dlurl = "https://www.apkmirror.com/apk/inc/app"
 | `strict-sigcheck` | Fail the build if an app is missing from `sig.txt` (see note below) | `true` | **Global only** |
 | `app-name` | Display name used in output filename and build label | `table name (hyphens replaced by spaces)` | Per-app |
 | `arch` | Target architecture (`all`, `both`, `arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`) | `all` | Per-app |
+| `dpi` | Target screen DPI (`nodpi`, `480dpi`, `all`, or comma-separated fallback list) | `nodpi` (with fallback) | Global / Per-app |
 | `version` | Target version (`auto`, `latest`, `exp`, or a specific version string) - `latest` fetches the newest APK available in the download source, `exp` also considers experimental patch versions, `auto` only stable ones | `auto` | Per-app |
 | `changelog-keywords` | List of keywords used to detect if this app was updated in the release notes | `[]` | Per-app |
 | `apkmirror-dlurl` | APKMirror page URL | `-` | Per-app |

@@ -56,7 +56,7 @@ def _require_java(min_version: int = 21) -> None:
     if version < min_version:
         abort(f"Java {version} found, but Java {min_version}+ is required")
 
-def _build(target_app: str | None = None, arch_override: str | None = None) -> int:
+def _build(target_app: str | None = None, arch_override: str | None = None, dpi_override: str | None = None) -> int:
     _require_java()
     data = load_toml(CONFIG_PATH)
     main_cfg = parse_config(data)
@@ -67,6 +67,9 @@ def _build(target_app: str | None = None, arch_override: str | None = None) -> i
 
     if arch_override:
         entries = [replace(e, arch=arch_override) for e in entries]
+
+    if dpi_override:
+        entries = [replace(e, dpi=dpi_override) for e in entries]
 
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
@@ -116,13 +119,19 @@ def main() -> None:
             sys.exit(_clear())
         case [target]:
             sys.exit(_build(target_app=target))
+        case [target, arch, dpi] if arch in VALID_ARCHES:
+            sys.exit(_build(target_app=target, arch_override=arch, dpi_override=dpi))
+        case [_, arch, _]:
+            abort(f"Unknown arch '{arch}'. Valid: {', '.join(sorted(VALID_ARCHES))}")
         case [target, arch] if arch in VALID_ARCHES:
             sys.exit(_build(target_app=target, arch_override=arch))
+        case [target, arg2] if arg2.endswith("dpi") or arg2 in ("nodpi", "anydpi") or arg2.isdigit():
+            sys.exit(_build(target_app=target, dpi_override=arg2))
         case [_, arch]:
             abort(f"Unknown arch '{arch}'. Valid: {', '.join(sorted(VALID_ARCHES))}")
         case _:
             epr(f"Unknown command: {' '.join(sys.argv[1:])}")
-            abort("Usage: main.py [target] [arch] | clear")
+            abort("Usage: main.py [target] [arch] [dpi] | clear")
 
 if __name__ == "__main__":
     main()

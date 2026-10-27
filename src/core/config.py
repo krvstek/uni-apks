@@ -34,6 +34,7 @@ class Config:
     brand: str
     strict_sigcheck: bool
     track_apk: bool
+    dpi: str
 
 class PatchSpec(TypedDict):
     version: str
@@ -78,6 +79,7 @@ def parse_config(data: dict[str, Any]) -> Config:
         cli_source=str(data.get("cli-source", "github:MorpheApp/morphe-desktop")),
         strict_sigcheck=_parse_bool(data, "strict-sigcheck", True),
         track_apk=_parse_bool(data, "track-apk", False),
+        dpi=str(data.get("dpi", "")),
     )
 
 def parse_app_entries(data: dict[str, Any], main: Config) -> list[AppEntry]:
@@ -117,7 +119,7 @@ def parse_app_entries(data: dict[str, Any], main: Config) -> list[AppEntry]:
             app_name=str(t.get("app-name", table_name.replace("-", " "))),
             brand=str(t.get("brand", main.brand)),
             arch=arch,
-            dpi=str(t.get("dpi", "")),
+            dpi=str(t.get("dpi", main.dpi)),
             version=str(t.get("version", "auto")),
             dl_urls=dl_urls,
             patcher_args=shlex.split(str(t.get("patcher-args", ""))),
