@@ -67,7 +67,7 @@ jobs:
           FILTER_CHANGELOG: ${{ inputs.filter_changelog }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RESULT="$(uv run python -m src.scripts.matrix get-matrix '${{ inputs.patch_source }}')"
+          RESULT="$(uv run python -m src.scripts.matrix --source '${{ inputs.patch_source }}')"
           echo "matrix=$(echo "$RESULT" | jq -c '{include}')" >> "$GITHUB_OUTPUT"
           echo "prerelease=$(echo "$RESULT" | jq -r '.prerelease')" >> "$GITHUB_OUTPUT"
 
@@ -112,7 +112,7 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
           KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
-        run: uv run main.py ${{ matrix.id }} ${{ matrix.arch }}
+        run: uv run main.py --target "${{ matrix.id }}" ${{ matrix.arch && format('--arch {0}', matrix.arch) || '' }}
 
       - name: Upload APKs to draft release
         if: always()
@@ -189,7 +189,7 @@ jobs:
           TAG: ${{ needs.prepare.outputs.version }}
           PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
         run: |
-          uv run python -m src.scripts.logs combine-logs logs | sed "s/{TAG}/$TAG/g" > final.md
+          uv run python -m src.scripts.logs --logs-dir logs | sed "s/{TAG}/$TAG/g" > final.md
           if [ "$PRERELEASE" = "true" ]; then
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --title "$TAG" --notes-file final.md
           else
@@ -201,7 +201,7 @@ jobs:
         env:
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_CHAT: ${{ secrets.TG_CHAT }}
-        run: uv run python -m src.scripts.telegram notify '${{ inputs.patch_source }}'
+        run: uv run python -m src.scripts.telegram --brand '${{ inputs.patch_source }}'
 
       - name: Delete empty draft if no APKs
         if: steps.check.outputs.has_apks != 'true'

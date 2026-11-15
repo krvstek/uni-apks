@@ -11,7 +11,7 @@
 # See the AUTHORS file in the root directory for details.
 # ---------------------------------------------------------
 
-import sys
+import argparse
 from pathlib import Path
 
 from src.core.logger import IS_GITHUB, abort
@@ -58,15 +58,25 @@ def combine_logs(logs_dir: Path | str = "logs") -> None:
     if unique := list(dict.fromkeys(collected)):
         print("\n\n".join(unique))
 
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="python -m src.scripts.logs",
+        description="Combine per-app markdown build logs into release notes.",
+    )
+    parser.add_argument(
+        "--logs-dir",
+        default="logs",
+        help="Directory containing build*.md log files (default: logs)",
+    )
+    args = parser.parse_args(argv)
+    if not args.logs_dir.strip():
+        parser.error("--logs-dir cannot be empty")
+    return args
+
 def main() -> None:
+    args = _parse_args()
     _require_ci("logs.py")
-    match sys.argv[1:]:
-        case ["combine-logs"]:
-            combine_logs()
-        case ["combine-logs", logs_dir]:
-            combine_logs(logs_dir)
-        case _:
-            abort("Usage: logs.py combine-logs [dir]")
+    combine_logs(args.logs_dir)
 
 if __name__ == "__main__":
     main()

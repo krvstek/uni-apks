@@ -31,11 +31,13 @@ No further setup needed, as `uv` handles the Python environment and dependencies
 
 ```bash
 uv run main.py # build all apps
-uv run main.py SomeApp # build a specific app
-uv run main.py SomeApp arm64-v8a # build with arch override
-uv run main.py SomeApp nodpi # build with dpi override
-uv run main.py SomeApp arm64-v8a nodpi # build with arch and dpi override
-uv run main.py clear # remove build/, temp/ and build.md
+uv run main.py --target SomeApp # build a specific app
+uv run main.py --target SomeApp OtherApp # build multiple specific apps
+uv run main.py --arch arm64-v8a # build all apps with arch override
+uv run main.py --target SomeApp --arch arm64-v8a # build with arch override
+uv run main.py --target SomeApp --dpi nodpi # build with dpi override
+uv run main.py --target SomeApp --arch arm64-v8a --dpi nodpi # build with arch and dpi override
+uv run main.py --clear # remove build/, temp/ and build.md
 ```
 
 Output APKs are saved to `build/`.

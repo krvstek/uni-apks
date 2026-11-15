@@ -12,10 +12,10 @@
 # See the AUTHORS file in the root directory for details.
 # ---------------------------------------------------------
 
+import argparse
 import json
 import os
 import re
-import sys
 from datetime import datetime
 from typing import Any
 
@@ -259,17 +259,33 @@ def check_builds_needed(force_all: bool = False) -> None:
 
     print(json.dumps(brands_to_build))
 
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="python -m src.scripts.matrix",
+        description="Generate CI build matrices from config.toml and upstream releases.",
+    )
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--source",
+        help="Generate app build matrix for a specific patch source/brand",
+    )
+    group.add_argument(
+        "--force",
+        action="store_true",
+        help="Skip upstream update check and output all enabled brands",
+    )
+    args = parser.parse_args(argv)
+    if args.source is not None and not args.source.strip():
+        parser.error("--source cannot be empty")
+    return args
+
 def main() -> None:
+    args = _parse_args()
     _require_ci("matrix.py")
-    match sys.argv[1:]:
-        case ["get-matrix"]:
-            check_builds_needed()
-        case ["get-matrix-force"]:
-            check_builds_needed(force_all=True)
-        case ["get-matrix", source]:
-            get_matrix(source)
-        case _:
-            abort("Usage: matrix.py get-matrix [source] | get-matrix-force")
+    if args.source is not None:
+        get_matrix(args.source)
+    else:
+        check_builds_needed(force_all=args.force)
 
 if __name__ == "__main__":
     main()

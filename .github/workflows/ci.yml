@@ -42,9 +42,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "${{ inputs.force_build }}" = "true" ]; then
-            echo "build_matrix=$(uv run python -m src.scripts.matrix get-matrix-force)" >> "$GITHUB_OUTPUT"
+            echo "build_matrix=$(uv run python -m src.scripts.matrix --force)" >> "$GITHUB_OUTPUT"
           else
-            echo "build_matrix=$(uv run python -m src.scripts.matrix get-matrix)" >> "$GITHUB_OUTPUT"
+            echo "build_matrix=$(uv run python -m src.scripts.matrix)" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Notify skipped build

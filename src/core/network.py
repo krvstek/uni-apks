@@ -16,7 +16,7 @@ import random
 import threading
 import time
 from pathlib import Path
-from typing import Any, Self, cast
+from typing import Self
 from urllib.parse import urlparse
 
 from curl_cffi import requests
@@ -67,7 +67,6 @@ def _handle_status(resp: Response, url: str, attempt: int) -> bool:
 
 class NetworkManager:
     def __init__(self) -> None:
-        # noinspection PyArgumentList
         self.session = requests.Session(impersonate="chrome152")
         token = os.getenv("GITHUB_TOKEN")
         self._gh_headers: dict[str, str] = {"Authorization": f"token {token}"} if token else {}
@@ -76,7 +75,6 @@ class NetworkManager:
         self._dest_locks: dict[Path, threading.Lock] = {}
         self._dest_mu = threading.Lock()
 
-    # noinspection PyArgumentList
     def _reset_session(self) -> None:
         self.session.close()
         self.session = requests.Session(impersonate="chrome152")
@@ -92,8 +90,10 @@ class NetworkManager:
             if resp.status_code != 200:
                 return False
 
-            resp_any: Any = resp
-            data = cast(dict[str, Any], resp_any.json())
+            data = resp.json()
+            if not isinstance(data, dict):
+                return False
+
             cookies = data.get("cookies", {})
             user_agent = data.get("user_agent")
             if isinstance(cookies, dict):
@@ -167,8 +167,7 @@ class NetworkManager:
                         continue
 
                     with tmp.open("wb") as fh:
-                        resp_any: Any = resp
-                        for chunk in cast(list[bytes], resp_any.iter_content(chunk_size=1048576)):
+                        for chunk in resp.iter_content(chunk_size=1048576):
                             fh.write(chunk)
                     tmp.replace(dest)
                     return

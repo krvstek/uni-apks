@@ -12,9 +12,9 @@
 # See the AUTHORS file in the root directory for details.
 # ---------------------------------------------------------
 
+import argparse
 import os
 import re
-import sys
 from pathlib import Path
 
 from curl_cffi import requests as curl_requests
@@ -78,7 +78,6 @@ def notify(brand: str, final_md_path: Path | str = "final.md") -> None:
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {"chat_id": chat, "text": msg, "parse_mode": "Markdown", "link_preview_options": {"is_disabled": True}}
     pr(f"Sending Telegram notification for '{brand}' to '{chat}'")
-    # noinspection PyArgumentList
     with curl_requests.Session() as session:
         resp = session.post(url, json=payload, timeout=(5, 10))
         if resp.status_code != 200:
@@ -86,15 +85,32 @@ def notify(brand: str, final_md_path: Path | str = "final.md") -> None:
         else:
             pr("Telegram notification sent successfully")
 
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="python -m src.scripts.telegram",
+        description="Send a build summary notification to Telegram.",
+    )
+    parser.add_argument(
+        "--brand",
+        required=True,
+        help="Brand / patch source name for the notification header",
+    )
+    parser.add_argument(
+        "--final-md",
+        default="final.md",
+        help="Path to the combined markdown release notes file (default: final.md)",
+    )
+    args = parser.parse_args(argv)
+    if not args.brand.strip():
+        parser.error("--brand cannot be empty")
+    if not args.final_md.strip():
+        parser.error("--final-md cannot be empty")
+    return args
+
 def main() -> None:
+    args = _parse_args()
     _require_ci("telegram.py")
-    match sys.argv[1:]:
-        case ["notify", brand]:
-            notify(brand)
-        case ["notify", brand, final_md]:
-            notify(brand, final_md)
-        case _:
-            abort("Usage: telegram.py notify <brand> [final_md_path]")
+    notify(args.brand, args.final_md)
 
 if __name__ == "__main__":
     main()
