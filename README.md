@@ -23,6 +23,9 @@ Here you can download and use applications selected for this repository, which a
 
 See [configs/README.md](configs/README.md) for the full list of brands, apps, releases, and Obtainium import configs.
 
+> [!NOTE]
+> Pre-built releases target **`arm64-v8a`** (64-bit ARM). If you need **`armeabi-v7a`** (32-bit ARM), you can build locally with `--arch armeabi-v7a` or set `arch` in your config (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+
 ## 🔐 Verifying Authenticity
 
 To ensure that the APK files you download are genuinely compiled by this project and haven't been tampered with, you can verify the APK's certificate fingerprint. All official releases share the following SHA-256 fingerprint:

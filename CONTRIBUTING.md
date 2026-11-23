@@ -58,7 +58,7 @@ Output APKs are saved to `build/`.
 
 Configuration is split into two tiers:
 
-- **`config.toml`** (project root, optional) - global options only (`parallel-jobs`, `strict-sigcheck`, and global defaults for `cli-source`, `cli-version`, `dpi`, `track-apk`). App tables are not allowed here.
+- **`config.toml`** (project root, optional) - global options only (`parallel-jobs`, `strict-sigcheck`, and global defaults for `cli-source`, `cli-version`, `arch`, `dpi`, `track-apk`). App tables are not allowed here.
 - **`configs/<brand>/config.toml`** - per-brand configuration. The folder name identifies the brand; top-level keys define brand-level defaults inherited by every `[App]` table in that file. Brand-specific assets (e.g. icons, headers) can live alongside it in `configs/<brand>/assets/`.
 
 ```toml
@@ -83,12 +83,12 @@ apkmirror-dlurl = "https://www.apkmirror.com/apk/inc/app"
 | `strict-sigcheck` | Fail the build if an app is missing from `sig.txt` (see note below) | `true` | **Global only** |
 | `cli-version` | CLI version to fetch (`latest`, `dev`, or a specific version string) | `latest` | Global / Brand / Per-app |
 | `cli-source` | GitHub or GitLab repo for CLI (`github:owner/repo` or `gitlab:owner/repo`) | `github:MorpheApp/morphe-desktop` | Global / Brand / Per-app |
+| `arch` | Target architecture (`arm64-v8a`, `armeabi-v7a`, `both`, `all`, `x86_64`, `x86`) | `arm64-v8a` | Global / Brand / Per-app |
 | `dpi` | Target screen DPI (`nodpi`, `480dpi`, `all`, or comma-separated fallback list) | `nodpi` (with fallback) | Global / Brand / Per-app |
 | `track-apk` | Trigger builds when a newer APK version is found on download source, even if there are no new patch releases | `false` | Global / Brand / Per-app |
 | `brand` | Used in output filenames | `brand folder name` | Brand / Per-app |
 | `enabled` | Set to `false` to skip this brand or entry | `true` | Brand / Per-app |
 | `app-name` | Display name used in output filename and build label | `table name (hyphens replaced by spaces)` | Per-app |
-| `arch` | Target architecture (`all`, `both`, `arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`) | `all` | Per-app |
 | `version` | Target version (`auto`, `latest`, `exp`, or a specific version string) - `latest` fetches the newest APK available in the download source, `exp` also considers experimental patch versions, `auto` only stable ones | `auto` | Per-app |
 | `changelog-keywords` | List of keywords used to detect if this app was updated in the release notes | `[]` | Per-app |
 | `apkmirror-dlurl` | APKMirror page URL | `-` | Per-app |

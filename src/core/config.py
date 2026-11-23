@@ -34,6 +34,7 @@ class Config:
     cli_source: str
     strict_sigcheck: bool
     track_apk: bool
+    arch: str
     dpi: str
 
 _GLOBAL_KEYS: frozenset[str] = frozenset(f.name.replace("_", "-") for f in fields(Config))
@@ -50,6 +51,7 @@ class AppEntry:
     app_name: str
     brand: str
     arch: str
+    explicit_arch: bool
     dpi: str
     version: str
     dl_urls: dict[str, str]
@@ -102,12 +104,16 @@ def parse_config(data: dict[str, Any]) -> Config:
     if invalid:
         names = ", ".join(f"'{k}'" for k in invalid)
         raise ValueError(f"Invalid global option(s) {names} in '{CONFIG_PATH}'")
+    arch = ""
+    if "arch" in data and (arch := str(data["arch"])) not in VALID_ARCHES:
+        raise ValueError(f"Wrong arch '{arch}' in '{CONFIG_PATH}'")
     return Config(
         parallel_jobs=int(str(data.get("parallel-jobs", os.process_cpu_count() or 1))),
         cli_version=str(data.get("cli-version", "latest")),
         cli_source=str(data.get("cli-source", "github:MorpheApp/morphe-desktop")),
         strict_sigcheck=_parse_bool(data, "strict-sigcheck", True),
         track_apk=_parse_bool(data, "track-apk", False),
+        arch=arch,
         dpi=str(data.get("dpi", "")),
     )
 
@@ -121,6 +127,9 @@ def parse_app_entries(data: dict[str, Any], main: Config, brand: str) -> list[Ap
     brand_cli_source = str(data.get("cli-source", main.cli_source))
     brand_cli_version = str(data.get("cli-version", main.cli_version))
     brand_track_apk = _parse_bool(data, "track-apk", main.track_apk)
+    brand_arch = main.arch
+    if "arch" in data and (brand_arch := str(data["arch"])) not in VALID_ARCHES:
+        raise ValueError(f"Wrong arch '{brand_arch}' for '{brand}'")
     brand_dpi = str(data.get("dpi", main.dpi))
     brand_enabled = _parse_bool(data, "enabled", True)
 
@@ -129,8 +138,9 @@ def parse_app_entries(data: dict[str, Any], main: Config, brand: str) -> list[Ap
         if not isinstance(t, dict):
             continue
 
-        if (arch := str(t.get("arch", "all"))) not in VALID_ARCHES:
-            raise ValueError(f"Wrong arch '{arch}' for '{table_name}'")
+        raw_arch = brand_arch
+        if "arch" in t and (raw_arch := str(t["arch"])) not in VALID_ARCHES:
+            raise ValueError(f"Wrong arch '{raw_arch}' for '{table_name}'")
 
         dl_urls: dict[str, str] = {}
         for src in SOURCES:
@@ -159,7 +169,8 @@ def parse_app_entries(data: dict[str, Any], main: Config, brand: str) -> list[Ap
             table=table_name,
             app_name=str(t.get("app-name", table_name.replace("-", " "))),
             brand=str(t.get("brand", brand_name)),
-            arch=arch,
+            arch=raw_arch or "arm64-v8a",
+            explicit_arch=bool(raw_arch),
             dpi=str(t.get("dpi", brand_dpi)),
             version=str(t.get("version", "auto")),
             dl_urls=dl_urls,

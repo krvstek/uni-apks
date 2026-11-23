@@ -16,7 +16,6 @@ version = "exp"
 [Music]
 apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/youtube-music"
 patcher-args = "-e 'Change header' -Ocustom=configs/morphe/assets/Music/header -e 'Custom branding' -OcustomIcon=configs/morphe/assets/Music/branding -OcustomName='Morphe Music'"
-arch = "both"
 
 [Music.patches]
 "github:MorpheApp/morphe-patches" = []
@@ -24,7 +23,6 @@ arch = "both"
 [Music-Experimental]
 apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/youtube-music"
 patcher-args = "-e 'Change header' -Ocustom=configs/morphe/assets/Music/header -e 'Custom branding' -OcustomIcon=configs/morphe/assets/Music/branding -OcustomName='Morphe Music'"
-arch = "both"
 version = "exp"
 
 [Music-Experimental.patches]

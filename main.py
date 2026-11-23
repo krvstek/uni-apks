@@ -102,7 +102,7 @@ def _build(target_brands: list[str] | None = None, target_apps: list[str] | None
         entries = selected
 
     if arch_override is not None:
-        entries = [replace(e, arch=arch_override) for e in entries]
+        entries = [replace(e, arch=arch_override, explicit_arch=True) for e in entries]
 
     if dpi_override is not None:
         entries = [replace(e, dpi=dpi_override) for e in entries]

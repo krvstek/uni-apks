@@ -221,7 +221,7 @@ def _submit_entries(entries: list[AppEntry], pool: ThreadPoolExecutor, net: Netw
         patcher = PatcherCLI(cli_cache[cli_key], app_mpp_map, APKSIGNER, ks_path=ks_path)
         arches = ("arm64-v8a", "armeabi-v7a") if entry.arch == "both" else (entry.arch,)
         for arch in arches:
-            details = [arch] if arch != "all" else []
+            details = [arch] if (entry.explicit_arch and arch != "all") else []
             if entry.dpi:
                 details.append(entry.dpi)
             label = f"{entry.app_name} ({', '.join(details)})" if details else entry.app_name
