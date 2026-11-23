@@ -23,7 +23,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from src.core.builder import run_build
-from src.core.config import BUILD_DIR, CONFIG_PATH, TEMP_DIR, VALID_ARCHES, AppEntry, load_toml, parse_app_entries, parse_config
+from src.core.config import BUILD_DIR, CONFIG_PATH, CONFIGS_DIR, TEMP_DIR, VALID_ARCHES, AppEntry, discover_brand_configs, load_global_config, load_toml, parse_app_entries
 from src.core.logger import abort, epr, is_interrupted, mark_interrupted, pr
 from src.core.network import NetworkManager
 
@@ -55,19 +55,51 @@ def _require_java(min_version: int = 21) -> None:
     if version < min_version:
         abort(f"Java {version} found, but Java {min_version}+ is required")
 
-def _build(target_apps: list[str] | None = None, arch_override: str | None = None, dpi_override: str | None = None) -> int:
+def _build(target_brands: list[str] | None = None, target_apps: list[str] | None = None, arch_override: str | None = None, dpi_override: str | None = None) -> int:
     _require_java()
-    data = load_toml(CONFIG_PATH)
-    main_cfg = parse_config(data)
-    pr(f"Loaded config '{CONFIG_PATH}'")
-    entries: list[AppEntry] = [e for e in parse_app_entries(data, main_cfg) if e.enabled]
+    main_cfg = load_global_config(CONFIG_PATH)
+    if CONFIG_PATH.is_file():
+        pr(f"Loaded global config '{CONFIG_PATH}'")
+
+    brand_configs = discover_brand_configs()
+    if not brand_configs:
+        abort(f"No brand configs found in '{CONFIGS_DIR}'")
+
+    if target_brands is not None:
+        unique_brands = list(dict.fromkeys(b.lower() for b in target_brands))
+        if missing_brands := [b for b in unique_brands if b not in brand_configs]:
+            label = ", ".join(f"'{b}'" for b in missing_brands)
+            abort(f"Brand {label} not found in '{CONFIGS_DIR}'" if len(missing_brands) == 1 else f"Brands {label} not found in '{CONFIGS_DIR}'")
+        selected_brands = {b: brand_configs[b] for b in unique_brands}
+    else:
+        selected_brands = brand_configs
+
+    entries_by_brand: dict[str, list[AppEntry]] = {}
+    for brand_key, cfg_path in selected_brands.items():
+        data = load_toml(cfg_path)
+        pr(f"Loaded config '{cfg_path}'")
+        entries_by_brand[brand_key] = [e for e in parse_app_entries(data, main_cfg, brand=cfg_path.parent.name) if e.enabled]
+
+    entries: list[AppEntry] = [e for brand_entries in entries_by_brand.values() for e in brand_entries]
     if target_apps is not None:
         unique_targets = list(dict.fromkeys(target_apps))
-        by_table = {e.table: e for e in entries}
+        by_table: dict[str, list[tuple[str, AppEntry]]] = {}
+        for brand_key, brand_entries in entries_by_brand.items():
+            for e in brand_entries:
+                by_table.setdefault(e.table, []).append((brand_key, e))
+
         if missing := [t for t in unique_targets if t not in by_table]:
             label = ", ".join(f"'{t}'" for t in missing)
             abort(f"App {label} not found in config" if len(missing) == 1 else f"Apps {label} not found in config")
-        entries = [by_table[t] for t in unique_targets]
+
+        selected: list[AppEntry] = []
+        for t in unique_targets:
+            matches = by_table[t]
+            if len(matches) > 1:
+                brands_str = ", ".join(b for b, _ in matches)
+                abort(f"App '{t}' exists in multiple brands ({brands_str}); specify --brand")
+            selected.append(matches[0][1])
+        entries = selected
 
     if arch_override is not None:
         entries = [replace(e, arch=arch_override) for e in entries]
@@ -114,14 +146,21 @@ def _sigint_handler(_sig: int, _frame: object) -> None:
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="main.py",
-        description="Build and patch Android APKs configured in config.toml.",
+        description="Build and patch Android APKs configured in configs/<brand>/config.toml.",
+    )
+    parser.add_argument(
+        "--brand",
+        nargs="+",
+        action="extend",
+        metavar="BRAND",
+        help="Brand folder name(s) in configs/ to build",
     )
     parser.add_argument(
         "--target",
         nargs="+",
         action="extend",
         metavar="APP",
-        help="TOML table name(s) of specific app(s) in config.toml to build",
+        help="TOML table name(s) of specific app(s) to build",
     )
     parser.add_argument(
         "--arch",
@@ -138,8 +177,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Remove build/, temp/, and build.md instead of building",
     )
     args = parser.parse_args(argv)
-    if args.clear and any(v is not None for v in (args.target, args.arch, args.dpi)):
-        parser.error("--clear cannot be used together with --target, --arch, or --dpi")
+    if args.clear and any(v is not None for v in (args.brand, args.target, args.arch, args.dpi)):
+        parser.error("--clear cannot be used together with --brand, --target, --arch, or --dpi")
     return args
 
 def main() -> None:
@@ -149,7 +188,7 @@ def main() -> None:
         sys.exit(_clear())
 
     _load_dotenv()
-    sys.exit(_build(target_apps=args.target, arch_override=args.arch, dpi_override=args.dpi))
+    sys.exit(_build(target_brands=args.brand, target_apps=args.target, arch_override=args.arch, dpi_override=args.dpi))
 
 if __name__ == "__main__":
     main()

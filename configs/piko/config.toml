@@ -1,0 +1,19 @@
+[X]
+apkmirror-dlurl = "https://www.apkmirror.com/apk/x-corp/twitter"
+
+[X.patches]
+"github:crimera/piko" = ["Browse tweet object", "Dynamic color"]
+
+[Twitter]
+apkmirror-dlurl = "https://www.apkmirror.com/apk/x-corp/twitter"
+
+[Twitter.patches]
+"github:crimera/piko" = ["Bring back twitter", "Browse tweet object", "Dynamic color"]
+
+[Instagram]
+apkmirror-dlurl = "https://www.apkmirror.com/apk/instagram/instagram-instagram"
+patcher-args = "-e 'Theme' -Oamoled=true"
+arch = "arm64-v8a"
+
+[Instagram.patches]
+"github:crimera/piko" = []

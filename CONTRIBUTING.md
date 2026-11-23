@@ -3,7 +3,7 @@
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/krvstek/uni-apks/ci.yml?style=flat-square&logo=githubactions&logoColor=%23FFFFFF&label=Build%20Status&color=%234500FF)](https://github.com/krvstek/uni-apks/actions/workflows/ci.yml)   [![Python 3.14](https://img.shields.io/badge/Python-3.14+-4500FF?style=flat-square&logo=python&logoColor=%23FFFFFF)](https://www.python.org/downloads/)   [![Telegram](https://img.shields.io/badge/Telegram-Channel-4500FF?style=flat-square&logo=telegram&logoColor=%23FFFFFF)](https://t.me/uni_apks)
 <br>
-[![Downloads](https://img.shields.io/github/downloads/krvstek/uni-apks/total?style=flat-square&logo=simpleanalytics&logoColor=%23FFFFFF&label=Downloads&color=%234500FF)](https://github.com/krvstek/uni-apks#-list-of-apps-in-this-repository)   [![Views](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2Fkrvstek%2Funi-apks&label=Views&icon=eye-fill&color=%234500ff&message=&style=flat-square&tz=Europe%2FWarsaw)](https://github.com/krvstek/uni-apks#-list-of-apps-in-this-repository)
+[![Downloads](https://img.shields.io/github/downloads/krvstek/uni-apks/total?style=flat-square&logo=simpleanalytics&logoColor=%23FFFFFF&label=Downloads&color=%234500FF)](https://github.com/krvstek/uni-apks/blob/main/configs/README.md)   [![Views](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2Fkrvstek%2Funi-apks&label=Views&icon=eye-fill&color=%234500ff&message=&style=flat-square&tz=Europe%2FWarsaw)](https://github.com/krvstek/uni-apks/blob/main/configs/README.md)
 <br>
 
 Here you will find a step-by-step technical guide on how to set up your environment, run the patching script, customize the build configuration, and contribute to the project's development.
@@ -30,8 +30,9 @@ No further setup needed, as `uv` handles the Python environment and dependencies
 3. ▶️ **Running**:
 
 ```bash
-uv run main.py # build all apps
-uv run main.py --target SomeApp # build a specific app
+uv run main.py # build all apps from all brands
+uv run main.py --brand morphe # build all apps for a specific brand
+uv run main.py --brand morphe --target SomeApp # build a specific app from a brand
 uv run main.py --target SomeApp OtherApp # build multiple specific apps
 uv run main.py --arch arm64-v8a # build all apps with arch override
 uv run main.py --target SomeApp --arch arm64-v8a # build with arch override
@@ -55,9 +56,13 @@ Output APKs are saved to `build/`.
 
 ## ⚙️ Configuration
 
-All configuration lives in `config.toml` in the project root. Top-level keys define defaults inherited by every app entry. Each app is a TOML table.
+Configuration is split into two tiers:
+
+- **`config.toml`** (project root, optional) - global options only (`parallel-jobs`, `strict-sigcheck`, and global defaults for `cli-source`, `cli-version`, `dpi`, `track-apk`). App tables are not allowed here.
+- **`configs/<brand>/config.toml`** - per-brand configuration. The folder name identifies the brand; top-level keys define brand-level defaults inherited by every `[App]` table in that file. Brand-specific assets (e.g. icons, headers) can live alongside it in `configs/<brand>/assets/`.
 
 ```toml
+# configs/<brand>/config.toml
 [SomeApp]
 apkmirror-dlurl = "https://www.apkmirror.com/apk/inc/app"
 # github-dlurl = "https://github.com/owner/repo/releases/tag/app"
@@ -74,14 +79,16 @@ apkmirror-dlurl = "https://www.apkmirror.com/apk/inc/app"
 
 | 🔑 Key | 📝 Description | 🔤 Default | 📌 Scope |
 |:------:|:--------------:|:----------:|:--------:|
-| `parallel-jobs` | Number of concurrent builds | `CPU count` | Global |
-| `brand` | Used in output filenames | `Morphe` | Global / Per-app |
-| `cli-version` | CLI version to fetch (`latest`, `dev`, or a specific version string) | `latest` | Global / Per-app |
-| `cli-source` | GitHub or GitLab repo for CLI (`github:owner/repo` or `gitlab:owner/repo`) | `github:MorpheApp/morphe-desktop` | Global / Per-app |
+| `parallel-jobs` | Number of concurrent builds | `CPU count` | **Global only** |
 | `strict-sigcheck` | Fail the build if an app is missing from `sig.txt` (see note below) | `true` | **Global only** |
+| `cli-version` | CLI version to fetch (`latest`, `dev`, or a specific version string) | `latest` | Global / Brand / Per-app |
+| `cli-source` | GitHub or GitLab repo for CLI (`github:owner/repo` or `gitlab:owner/repo`) | `github:MorpheApp/morphe-desktop` | Global / Brand / Per-app |
+| `dpi` | Target screen DPI (`nodpi`, `480dpi`, `all`, or comma-separated fallback list) | `nodpi` (with fallback) | Global / Brand / Per-app |
+| `track-apk` | Trigger builds when a newer APK version is found on download source, even if there are no new patch releases | `false` | Global / Brand / Per-app |
+| `brand` | Used in output filenames | `brand folder name` | Brand / Per-app |
+| `enabled` | Set to `false` to skip this brand or entry | `true` | Brand / Per-app |
 | `app-name` | Display name used in output filename and build label | `table name (hyphens replaced by spaces)` | Per-app |
 | `arch` | Target architecture (`all`, `both`, `arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`) | `all` | Per-app |
-| `dpi` | Target screen DPI (`nodpi`, `480dpi`, `all`, or comma-separated fallback list) | `nodpi` (with fallback) | Global / Per-app |
 | `version` | Target version (`auto`, `latest`, `exp`, or a specific version string) - `latest` fetches the newest APK available in the download source, `exp` also considers experimental patch versions, `auto` only stable ones | `auto` | Per-app |
 | `changelog-keywords` | List of keywords used to detect if this app was updated in the release notes | `[]` | Per-app |
 | `apkmirror-dlurl` | APKMirror page URL | `-` | Per-app |
@@ -89,8 +96,6 @@ apkmirror-dlurl = "https://www.apkmirror.com/apk/inc/app"
 | `exclusive-patches` | Only apply patches listed in `[AppName.patches]`, exclude everything else | `false` | Per-app |
 | `patcher-args` | Extra arguments passed directly to Morphe CLI | `-` | Per-app |
 | `skip-sigcheck` | Completely bypasses signature checks for this app (see note below) | `false` | **Per-app only** |
-| `track-apk` | Trigger builds when a newer APK version is found on download source, even if there are no new patch releases | `false` | Global / Per-app |
-| `enabled` | Set to `false` to skip this entry | `true` | Per-app |
 
 **`[AppName.patches]` table** - defines which patch bundles to use and which patches to apply from each:
 
@@ -132,19 +137,9 @@ A list of keyword strings to search for in the release notes. If not specified, 
 
 4. ➕ **Adding a new patch source**:
 
-- Add your app entries to `config.toml` with a `[AppName.patches]` table pointing to your patch repo, and set `brand` accordingly (see the configuration table above for all available options).
-- Add a new job to `.github/workflows/ci.yml` so the CI picks up your brand automatically. Copy the block below and replace every occurrence of `<brand>` with your brand name in **lowercase** (must match the `brand` value set in `config.toml`):
-```yaml
-build-<brand>:
-  name: build (<brand>)
-  needs: check-versions
-  if: contains(fromJson(needs.check-versions.outputs.build_matrix), '<brand>')
-  uses: ./.github/workflows/build.yml
-  with:
-    patch_source: '<brand>'
-    filter_changelog: ${{ inputs.force_build != true }}
-  secrets: inherit
-```
+- Create a new lowercase directory `configs/<brand>/` with a `config.toml` containing your app entries and `[AppName.patches]` tables (plus an optional `assets/` folder for custom icons/headers).
+- Both `.github/workflows/ci.yml` (dynamic brand matrix) and `.github/workflows/build.yml` (string `patch_source` input) pick up new brands automatically.
+- Optionally add `configs/<brand>/README.md` with your app list / Obtainium links and add the brand to `configs/README.md`.
 
 5. 🔑 **Keystore**:
 

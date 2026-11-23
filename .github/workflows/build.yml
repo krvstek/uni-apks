@@ -3,13 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       patch_source:
-        description: 'Select patch source'
+        description: 'Brand name (folder in configs/)'
         required: true
         default: 'morphe'
-        type: choice
-        options:
-          - morphe
-          - piko
+        type: string
   workflow_call:
     inputs:
       patch_source:
@@ -112,7 +109,7 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
           KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
-        run: uv run main.py --target "${{ matrix.id }}" ${{ matrix.arch && format('--arch {0}', matrix.arch) || '' }}
+        run: uv run main.py --brand "${{ inputs.patch_source }}" --target "${{ matrix.id }}" ${{ matrix.arch && format('--arch {0}', matrix.arch) || '' }}
 
       - name: Upload APKs to draft release
         if: always()

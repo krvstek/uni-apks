@@ -51,7 +51,7 @@ body:
           required: true
         - label: I confirm this is a bug in the build script, and NOT a bug in the patched application or patches source.
           required: true
-        - label: I have verified that my `config.toml` is valid.
+        - label: I have verified that my config file(s) (`config.toml` / `configs/<brand>/config.toml`) are valid.
           required: true
         - label: I understand that feature requests, "how-to" questions, and general help belong in [Discussions](https://github.com/krvstek/uni-apks/discussions).
           required: true

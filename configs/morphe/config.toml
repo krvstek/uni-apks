@@ -1,0 +1,46 @@
+[YouTube]
+apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/youtube"
+patcher-args = "-e 'Change header' -Ocustom=configs/morphe/assets/YouTube/header -e 'Custom branding' -OcustomIcon=configs/morphe/assets/YouTube/branding -OcustomName=Morphe"
+
+[YouTube.patches]
+"github:MorpheApp/morphe-patches" = []
+
+[YouTube-Experimental]
+apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/youtube"
+patcher-args = "-e 'Change header' -Ocustom=configs/morphe/assets/YouTube/header -e 'Custom branding' -OcustomIcon=configs/morphe/assets/YouTube/branding -OcustomName=Morphe"
+version = "exp"
+
+[YouTube-Experimental.patches]
+"github:MorpheApp/morphe-patches" = []
+
+[Music]
+apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/youtube-music"
+patcher-args = "-e 'Change header' -Ocustom=configs/morphe/assets/Music/header -e 'Custom branding' -OcustomIcon=configs/morphe/assets/Music/branding -OcustomName='Morphe Music'"
+arch = "both"
+
+[Music.patches]
+"github:MorpheApp/morphe-patches" = []
+
+[Music-Experimental]
+apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/youtube-music"
+patcher-args = "-e 'Change header' -Ocustom=configs/morphe/assets/Music/header -e 'Custom branding' -OcustomIcon=configs/morphe/assets/Music/branding -OcustomName='Morphe Music'"
+arch = "both"
+version = "exp"
+
+[Music-Experimental.patches]
+"github:MorpheApp/morphe-patches" = []
+
+[Reddit]
+apkmirror-dlurl = "https://www.apkmirror.com/apk/redditinc/reddit"
+patcher-args = "-e 'Custom branding name for Reddit' -OappName='Morphe Reddit'"
+
+[Reddit.patches]
+"github:MorpheApp/morphe-patches" = []
+
+[Reddit-Experimental]
+apkmirror-dlurl = "https://www.apkmirror.com/apk/redditinc/reddit"
+patcher-args = "-e 'Custom branding name for Reddit' -OappName='Morphe Reddit'"
+version = "exp"
+
+[Reddit-Experimental.patches]
+"github:MorpheApp/morphe-patches" = []

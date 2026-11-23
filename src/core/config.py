@@ -15,13 +15,14 @@
 import os
 import shlex
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any, TypedDict
 
 TEMP_DIR: Path = Path("temp")
 BUILD_DIR: Path = Path("build")
 CONFIG_PATH: Path = Path("config.toml")
+CONFIGS_DIR: Path = Path("configs")
 SOURCES: tuple[str, ...] = ("apkmirror", "github")
 VALID_ARCHES: frozenset[str] = frozenset({"both", "all", "arm64-v8a", "armeabi-v7a", "x86_64", "x86"})
 
@@ -31,10 +32,12 @@ class Config:
     parallel_jobs: int
     cli_version: str
     cli_source: str
-    brand: str
     strict_sigcheck: bool
     track_apk: bool
     dpi: str
+
+_GLOBAL_KEYS: frozenset[str] = frozenset(f.name.replace("_", "-") for f in fields(Config))
+_BRAND_KEYS: frozenset[str] = (_GLOBAL_KEYS - {"parallel-jobs", "strict-sigcheck"}) | {"brand", "enabled"}
 
 class PatchSpec(TypedDict):
     version: str
@@ -71,10 +74,36 @@ def _parse_bool(d: dict[str, Any], key: str, default: bool) -> bool:
 
     raise ValueError(f"'{key}' must be a boolean (true/false without quotes), got {type(value).__name__}")
 
+def load_global_config(path: Path = CONFIG_PATH) -> Config:
+    data = load_toml(path) if path.is_file() else {}
+    return parse_config(data)
+
+def discover_brand_configs(configs_dir: Path = CONFIGS_DIR) -> dict[str, Path]:
+    if not configs_dir.is_dir():
+        return {}
+
+    configs: dict[str, Path] = {}
+    for cfg_path in sorted(configs_dir.glob("*/config.toml")):
+        if not cfg_path.is_file():
+            continue
+        key = cfg_path.parent.name.lower()
+        if key in configs:
+            raise ValueError(f"Duplicate brand config directory for '{key}' in '{configs_dir}'")
+        configs[key] = cfg_path
+    return configs
+
 def parse_config(data: dict[str, Any]) -> Config:
+    tables = [k for k, v in data.items() if isinstance(v, dict)]
+    if tables:
+        names = ", ".join(f"[{t}]" for t in tables)
+        raise ValueError(f"Unexpected app table(s) {names} in '{CONFIG_PATH}'. Move app configs to '{CONFIGS_DIR}/<brand>/config.toml'")
+
+    invalid = sorted(data.keys() - _GLOBAL_KEYS)
+    if invalid:
+        names = ", ".join(f"'{k}'" for k in invalid)
+        raise ValueError(f"Invalid global option(s) {names} in '{CONFIG_PATH}'")
     return Config(
         parallel_jobs=int(str(data.get("parallel-jobs", os.process_cpu_count() or 1))),
-        brand=str(data.get("brand", "Morphe")),
         cli_version=str(data.get("cli-version", "latest")),
         cli_source=str(data.get("cli-source", "github:MorpheApp/morphe-desktop")),
         strict_sigcheck=_parse_bool(data, "strict-sigcheck", True),
@@ -82,7 +111,19 @@ def parse_config(data: dict[str, Any]) -> Config:
         dpi=str(data.get("dpi", "")),
     )
 
-def parse_app_entries(data: dict[str, Any], main: Config) -> list[AppEntry]:
+def parse_app_entries(data: dict[str, Any], main: Config, brand: str) -> list[AppEntry]:
+    invalid = sorted(k for k, v in data.items() if not isinstance(v, dict) and k not in _BRAND_KEYS)
+    if invalid:
+        names = ", ".join(f"'{k}'" for k in invalid)
+        raise ValueError(f"Invalid brand option(s) {names} for '{brand}'")
+
+    brand_name = str(data.get("brand", brand))
+    brand_cli_source = str(data.get("cli-source", main.cli_source))
+    brand_cli_version = str(data.get("cli-version", main.cli_version))
+    brand_track_apk = _parse_bool(data, "track-apk", main.track_apk)
+    brand_dpi = str(data.get("dpi", main.dpi))
+    brand_enabled = _parse_bool(data, "enabled", True)
+
     entries: list[AppEntry] = []
     for table_name, t in data.items():
         if not isinstance(t, dict):
@@ -117,19 +158,19 @@ def parse_app_entries(data: dict[str, Any], main: Config) -> list[AppEntry]:
         entries.append(AppEntry(
             table=table_name,
             app_name=str(t.get("app-name", table_name.replace("-", " "))),
-            brand=str(t.get("brand", main.brand)),
+            brand=str(t.get("brand", brand_name)),
             arch=arch,
-            dpi=str(t.get("dpi", main.dpi)),
+            dpi=str(t.get("dpi", brand_dpi)),
             version=str(t.get("version", "auto")),
             dl_urls=dl_urls,
             patcher_args=shlex.split(str(t.get("patcher-args", ""))),
             patches=patches,
             exclusive_patches=_parse_bool(t, "exclusive-patches", False),
-            cli_source=str(t.get("cli-source", main.cli_source)),
-            cli_version=str(t.get("cli-version", main.cli_version)),
+            cli_source=str(t.get("cli-source", brand_cli_source)),
+            cli_version=str(t.get("cli-version", brand_cli_version)),
             skip_sigcheck=_parse_bool(t, "skip-sigcheck", False),
-            enabled=_parse_bool(t, "enabled", True),
+            enabled=brand_enabled and _parse_bool(t, "enabled", True),
             changelog_keywords=keywords,
-            track_apk=_parse_bool(t, "track-apk", main.track_apk),
+            track_apk=_parse_bool(t, "track-apk", brand_track_apk),
         ))
     return entries

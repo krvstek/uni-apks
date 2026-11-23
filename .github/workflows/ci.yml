@@ -57,22 +57,16 @@ jobs:
         run: |
           gh run list -L400 --repo "$GITHUB_REPOSITORY" --json databaseId -q '.[].databaseId' | tail -n+91 | xargs -IID gh api "repos/$GITHUB_REPOSITORY/actions/runs/ID" -X DELETE || true
 
-  build-morphe:
-    name: build (Morphe)
+  build:
+    name: build
     needs: check-versions
-    if: contains(fromJSON(needs.check-versions.outputs.build_matrix), 'morphe')
+    if: needs.check-versions.outputs.build_matrix != '[]' && needs.check-versions.outputs.build_matrix != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        brand: ${{ fromJSON(needs.check-versions.outputs.build_matrix) }}
     uses: ./.github/workflows/build.yml
     with:
-      patch_source: 'morphe'
-      filter_changelog: ${{ inputs.force_build != true }}
-    secrets: inherit
-
-  build-piko:
-    name: build (Piko)
-    needs: check-versions
-    if: contains(fromJSON(needs.check-versions.outputs.build_matrix), 'piko')
-    uses: ./.github/workflows/build.yml
-    with:
-      patch_source: 'piko'
+      patch_source: ${{ matrix.brand }}
       filter_changelog: ${{ inputs.force_build != true }}
     secrets: inherit

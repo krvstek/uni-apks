@@ -19,7 +19,7 @@ import re
 from datetime import datetime
 from typing import Any
 
-from src.core.config import CONFIG_PATH, AppEntry, load_toml, parse_app_entries, parse_config
+from src.core.config import CONFIG_PATH, AppEntry, discover_brand_configs, load_global_config, load_toml, parse_app_entries
 from src.core.logger import IS_GITHUB, abort, epr
 from src.core.network import NetworkManager, ResourceNotFoundError
 from src.core.prebuilts import get_highest_ver, ver_key
@@ -107,9 +107,19 @@ def _fetch_latest_source_version(entry: AppEntry, net: NetworkManager, scrapers:
             epr(f"Failed to fetch source version for '{entry.table}' from '{src}': {exc}")
     return None
 
-def _load_entries() -> list[AppEntry]:
-    data = load_toml(CONFIG_PATH)
-    return parse_app_entries(data, parse_config(data))
+def _load_brand_entries(brand: str | None = None) -> dict[str, list[AppEntry]]:
+    main_cfg = load_global_config(CONFIG_PATH)
+    brand_configs = discover_brand_configs()
+    if brand is not None:
+        brand_key = brand.lower()
+        cfg_path = brand_configs.get(brand_key)
+        if cfg_path is None:
+            abort(f"No config found for brand '{brand}'")
+        return {brand_key: parse_app_entries(load_toml(cfg_path), main_cfg, brand=cfg_path.parent.name)}
+    return {
+        brand_key: parse_app_entries(load_toml(cfg_path), main_cfg, brand=cfg_path.parent.name)
+        for brand_key, cfg_path in brand_configs.items()
+    }
 
 def get_matrix(source: str) -> None:
     source_lower = source.lower()
@@ -117,8 +127,8 @@ def get_matrix(source: str) -> None:
     patches_source = ""
     is_prerelease = False
     staged: list[AppEntry] = []
-    for entry in _load_entries():
-        if not entry.enabled or entry.brand.lower() != source_lower:
+    for entry in _load_brand_entries(source)[source_lower]:
+        if not entry.enabled:
             continue
         if not patches_source:
             patches_source = next(iter(entry.patches), "")
@@ -150,7 +160,7 @@ def get_matrix(source: str) -> None:
             include: list[dict[str, str]] = []
 
             for entry in staged:
-                base_name = f"{entry.app_name.lower().replace(' ', '-')}-{source_lower}"
+                base_name = f"{entry.app_name.lower().replace(' ', '-')}-{entry.brand.lower().replace(' ', '-')}"
                 built_ver = brand_built.get(base_name)
                 has_new_apk = False
                 if entry.track_apk and entry.dl_urls:
@@ -185,14 +195,14 @@ def get_matrix(source: str) -> None:
 def check_builds_needed(force_all: bool = False) -> None:
     seen: dict[str, str] = {}
     dev_brands: set[str] = set()
-    entries = _load_entries()
-    for entry in entries:
-        if not entry.enabled:
+    entries_by_brand: dict[str, list[AppEntry]] = {}
+    for brand, entries in _load_brand_entries().items():
+        enabled_entries = [e for e in entries if e.enabled]
+        if not enabled_entries:
             continue
-        brand = entry.brand.lower()
-        if brand not in seen:
-            seen[brand] = next(iter(entry.patches), "")
-        if any(spec["version"] == "dev" for spec in entry.patches.values()):
+        entries_by_brand[brand] = enabled_entries
+        seen[brand] = next((next(iter(e.patches)) for e in enabled_entries if e.patches), "")
+        if any(spec["version"] == "dev" for e in enabled_entries for spec in e.patches.values()):
             dev_brands.add(brand)
 
     if not seen:
@@ -206,11 +216,6 @@ def check_builds_needed(force_all: bool = False) -> None:
     repo = os.getenv("GITHUB_REPOSITORY")
     if not repo:
         abort("GITHUB_REPOSITORY environment variable is not set")
-
-    entries_by_brand: dict[str, list[AppEntry]] = {}
-    for entry in entries:
-        if entry.enabled:
-            entries_by_brand.setdefault(entry.brand.lower(), []).append(entry)
 
     with NetworkManager() as net:
         our_releases_by_brand, built_versions_by_brand = _fetch_our_releases(repo, net)
@@ -247,7 +252,7 @@ def check_builds_needed(force_all: bool = False) -> None:
             for app in entries_by_brand.get(brand, []):
                 if not app.track_apk or not app.dl_urls:
                     continue
-                base_name = f"{app.app_name.lower().replace(' ', '-')}-{brand}"
+                base_name = f"{app.app_name.lower().replace(' ', '-')}-{app.brand.lower().replace(' ', '-')}"
                 built_ver = brand_built.get(base_name)
                 source_ver = _fetch_latest_source_version(app, net, scrapers)
                 if source_ver and is_newer_version(source_ver, built_ver):
@@ -262,7 +267,7 @@ def check_builds_needed(force_all: bool = False) -> None:
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="python -m src.scripts.matrix",
-        description="Generate CI build matrices from config.toml and upstream releases.",
+        description="Generate CI build matrices from brand configs and upstream releases.",
     )
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
