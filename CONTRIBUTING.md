@@ -89,7 +89,7 @@ apkmirror-dlurl = "https://www.apkmirror.com/apk/inc/app"
 | `brand` | Used in output filenames | `brand folder name` | Brand / Per-app |
 | `enabled` | Set to `false` to skip this brand or entry | `true` | Brand / Per-app |
 | `app-name` | Display name used in output filename and build label | `table name (hyphens replaced by spaces)` | Per-app |
-| `version` | Target version (`auto`, `latest`, `exp`, or a specific version string) - `latest` fetches the newest APK available in the download source, `exp` also considers experimental patch versions, `auto` only stable ones | `auto` | Per-app |
+| `version` | Target version (`auto`, `latest`, `exp`, or a specific version string) - `latest` fetches the newest APK available in the download source, `exp` also considers experimental patch versions, `auto` only stable ones. If no patch lists the chosen version, patching is forced with `-f` | `auto` | Per-app |
 | `changelog-keywords` | List of keywords used to detect if this app was updated in the release notes | `[]` | Per-app |
 | `apkmirror-dlurl` | APKMirror page URL | `-` | Per-app |
 | `github-dlurl` | GitHub Releases page URL | `-` | Per-app |

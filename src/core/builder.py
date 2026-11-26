@@ -78,7 +78,10 @@ def _resolve_version(entry: AppEntry, patcher: PatcherCLI, list_patches: str, pk
 
     vcode_str = f" (versionCode: {vcode})" if vcode else ""
     pr(f"Choosing version '{version}'{vcode_str} for '{entry.table}'")
-    return version, vcode, is_custom
+    force = is_custom and not patcher.is_version_listed(pkg_name, version)
+    if force:
+        wpr(f"No patch lists version '{version}' for '{entry.table}', patching with '-f'")
+    return version, vcode, force
 
 def _download_apk(entry: AppEntry, version: str, arch: str, pkg_name: str, scrapers: dict[str, BaseScraper], dl_from: str, failed_sources: set[str], version_code: str | None = None) -> DownloadResult:
     arch_f = arch.replace(" ", "")

@@ -99,6 +99,9 @@ class PatcherCLI:
                 parts.append(_run_java("-jar", self.cli_jar, "list-versions", "--patches", mpp, "-f", pkg_name, *extra, timeout=60))
         return "\n".join(parts)
 
+    def is_version_listed(self, pkg_name: str, version: str) -> bool:
+        return bool(re.search(rf"^\s+{re.escape(version)}(?:\s|$)", self.list_versions(pkg_name, experimental=True), re.MULTILINE))
+
     def get_last_supported_version(self, list_patches_output: str, pkg_name: str, patches: dict[str, PatchSpec], arch: str = "arm64-v8a", experimental: bool = False) -> tuple[str, str | None] | None:
         all_included = [p for spec in patches.values() for p in spec["include"]]
         all_vers: list[str] = []
